@@ -249,10 +249,6 @@ export default function AboutPage() {
                       {item.desc}
                     </p>
                   </div>
-                  <div className="mt-5 pt-3 border-t border-border/40 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
-                    <span>Explore Capabilities</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </div>
                 </motion.div>
               );
             })}
@@ -288,8 +284,8 @@ export default function AboutPage() {
               <button
                 onClick={() => setActiveTab('mission')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'mission'
-                    ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Our Mission
@@ -297,8 +293,8 @@ export default function AboutPage() {
               <button
                 onClick={() => setActiveTab('values')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'values'
-                    ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Core Values
@@ -306,8 +302,8 @@ export default function AboutPage() {
               <button
                 onClick={() => setActiveTab('standards')}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'standards'
-                    ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                    : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground'
                   }`}
               >
                 Governance
