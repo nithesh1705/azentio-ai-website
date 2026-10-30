@@ -21,7 +21,7 @@ describe('Client Dashboard DAL', () => {
   it('rejects actors without activeTenantId', () => {
     const actorWithoutTenant: Actor = {
       ...memberActor,
-      activeTenantId: undefined,
+      activeTenantId: null,
     };
 
     expect(() => getClientDashboardData(actorWithoutTenant)).toThrow(
