@@ -1,408 +1,492 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
-import { createContribution, scanSensitivity, getPublicOfferings } from '@/server/dal/store';
+import { createObservationDraft, computeWhoCanSee } from '@/server/dal/client/observations';
+import { scanSensitivity, store } from '@/server/dal/store';
+import { VisibilityChoice } from '@/types';
 import {
-  Sparkles,
-  ChevronLeft,
-  FileText,
+  ArrowLeft,
   ShieldCheck,
   AlertTriangle,
+  Info,
   Lock,
-  Save,
-  Send,
-  Building2,
+  Globe2,
   CheckCircle2,
+  Sparkles,
+  Layers,
+  Building2,
+  Send,
+  Save,
+  HelpCircle,
 } from 'lucide-react';
-import { VisibilityChoice } from '@/types';
 
 export default function NewObservationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedOffering = searchParams?.get('offeringId') || '';
   const { actor, activeTenant } = usePersona();
-  const offerings = getPublicOfferings();
 
-  const [formData, setFormData] = useState({
-    title: '',
-    body: '',
-    offeringId: 'offering-fai',
-    industry: 'Retail & Consumer Goods',
-    region: 'North America / EMEA',
-    observationPeriod: 'Q1 2026',
-    evidenceType: 'Aggregated Portfolio Delinquency Patterns',
-    confidence: 'High' as 'High' | 'Medium' | 'Preliminary',
-    links: ['https://synthetic-data.azentio.ai/evidence-pilot.pdf'],
-    visibilityChoice: 'private_to_author' as VisibilityChoice,
-  });
+  // Form State
+  const [offeringId, setOfferingId] = useState(preselectedOffering);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [industry, setIndustry] = useState('Banking & Capital Markets');
+  const [region, setRegion] = useState('Southeast Asia');
+  const [observationPeriod, setObservationPeriod] = useState('2026-Q1');
+  const [evidenceType, setEvidenceType] = useState('Production Telemetry');
+  const [confidence, setConfidence] = useState<'High' | 'Medium' | 'Preliminary'>('High');
+  const [visibilityChoice, setVisibilityChoice] = useState<VisibilityChoice>('within_organisation');
 
+  // 4 Independent Consents
   const [consents, setConsents] = useState({
     consent_process: true,
-    consent_publish: false,
+    consent_publish: true,
     consent_attribution: false,
-    consent_training: false,
-    policyVersion: 'v1.0-2026',
-    timestamp: new Date().toISOString(),
+    consent_training: false, // Strictly default off
   });
 
-  const [linkInput, setLinkInput] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!actor.activeTenantId || !activeTenant) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
         <Building2 className="w-12 h-12 text-muted-foreground mx-auto" />
-        <h1 className="text-2xl font-bold text-foreground">Select Active Workspace</h1>
-        <p className="text-sm text-muted-foreground">
-          Please select a client persona to contribute market observations.
-        </p>
+        <h1 className="text-xl font-bold text-foreground">Workspace Required</h1>
+        <p className="text-xs text-muted-foreground">Select an active client workspace to draft observations.</p>
+        <Link href="/choose-workspace" className="text-xs text-primary underline">
+          Switch Workspace
+        </Link>
       </div>
     );
   }
 
+  // Get entitled offerings
+  const entitledOfferings = store.offerings.filter((o) =>
+    activeTenant.entitledOfferings.includes(o.id)
+  );
+
+  // Default offering if not set
+  React.useEffect(() => {
+    if (!offeringId && entitledOfferings.length > 0) {
+      setOfferingId(entitledOfferings[0].id);
+    }
+  }, [entitledOfferings, offeringId]);
+
   // Real-time sensitivity scan
-  const sensitivityFlags = [
-    ...scanSensitivity(formData.title),
-    ...scanSensitivity(formData.body),
-  ];
+  const sensitivityFlags = useMemo(() => {
+    return [...scanSensitivity(title), ...scanSensitivity(body)];
+  }, [title, body]);
 
-  const handleCreate = (isSubmit: boolean) => {
-    if (!formData.title.trim() || !formData.body.trim()) {
-      setError('Please provide a title and detailed observation description.');
+  // Live "Who can see this version" summary
+  const whoCanSeeDraft = computeWhoCanSee(visibilityChoice, 'Draft');
+  const whoCanSeeSubmitted = computeWhoCanSee(visibilityChoice, 'Submitted');
+
+  const handleSave = (autoSubmit: boolean) => {
+    if (!title.trim() || !body.trim() || !offeringId) {
+      alert('Please provide a title, detailed observation body, and select an offering.');
       return;
     }
 
-    if (isSubmit && !consents.consent_publish) {
-      setError('Community sharing requires explicit consent to publish a reviewed, de-identified representation.');
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
-    setTimeout(() => {
-      try {
-        createContribution(actor, {
-          ...formData,
+    setIsSubmitting(true);
+    try {
+      const obs = createObservationDraft(
+        actor,
+        {
+          title: title.trim(),
+          body: body.trim(),
+          offeringId,
+          industry,
+          region,
+          observationPeriod,
+          evidenceType,
+          confidence,
+          visibilityChoice,
           consents,
-          isSubmit,
-        });
-        router.push('/client/observations');
-      } catch (err: any) {
-        setError(err.message || 'Failed to save observation');
-        setSubmitting(false);
-      }
-    }, 500);
+        },
+        autoSubmit
+      );
+
+      router.push(`/client/observations/${obs.id}`);
+    } catch (err: any) {
+      alert('Failed: ' + err.message);
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Breadcrumb */}
-      <div className="mb-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Back button */}
+      <div>
         <Link
           href="/client/observations"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" />
           <span>Back to Observations</span>
         </Link>
       </div>
 
-      <div className="p-8 sm:p-10 rounded-3xl glass-panel border border-border">
-        <div className="flex items-center justify-between pb-6 border-b border-border">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs uppercase tracking-widest font-bold text-primary">
-                {activeTenant.name} &bull; Structured Contribution
-              </span>
-              <span className="badge-synthetic text-xs">Synthetic Observation</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-              Record Market Observation
-            </h1>
-          </div>
-          <Lock className="w-6 h-6 text-muted-foreground" />
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+            {activeTenant.name}
+          </span>
+          <span className="text-xs text-muted-foreground">Authoring Studio</span>
         </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+          Record Field Observation
+        </h1>
+        <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+          Log operational findings, model edge cases, or latency benchmarks. Every contribution undergoes client-side sensitivity scanning before any review.
+        </p>
+      </div>
 
-        {error && (
-          <div className="mt-6 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
-            {error}
-          </div>
-        )}
+      <div className="space-y-6">
+        {/* Offering & Classification */}
+        <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
+          <h2 className="text-sm font-bold text-foreground">1. Context & Entitlement</h2>
 
-        {/* Real-time Sensitivity Scanner Feedback */}
-        {sensitivityFlags.length > 0 && (
-          <div className="mt-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs space-y-2">
-            <div className="flex items-center gap-2 font-bold">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              <span>Sensitivity Scanner Flagged Potential Identifiers:</span>
-            </div>
-            <ul className="list-disc list-inside space-y-1">
-              {sensitivityFlags.map((flag, idx) => (
-                <li key={idx}>{flag}</li>
-              ))}
-            </ul>
-            <p className="text-[11px] text-muted-foreground italic">
-              Notice (§2.7): Heuristic scans only flag for review; they are not a privacy guarantee. Moderators will redact all sensitive and identifying material prior to any approved shared publication.
-            </p>
-          </div>
-        )}
-
-        <div className="mt-8 space-y-6">
-          {/* Title */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
-              Observation Title <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Post-holiday working capital repayment friction in retail SME cohorts"
-              className="w-full bg-muted/60 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          {/* Body */}
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-foreground mb-2">
-              Detailed Observation Description <span className="text-destructive">*</span>
-            </label>
-            <textarea
-              rows={4}
-              value={formData.body}
-              onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-              placeholder="Describe the operational challenge, model anomaly, or market behavior observed. Exclude specific customer names, real account numbers, and proprietary pricing..."
-              className="w-full bg-muted/60 border border-border rounded-xl px-4 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          {/* Form Meta Selectors */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Relevant Offering
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Entitled Solution
               </label>
               <select
-                value={formData.offeringId}
-                onChange={(e) => setFormData({ ...formData, offeringId: e.target.value })}
-                className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                value={offeringId}
+                onChange={(e) => setOfferingId(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                {offerings.map((o) => (
+                {entitledOfferings.map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.name}
+                    {o.name} ({o.category})
                   </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Industry Sector
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Industry
               </label>
               <select
-                value={formData.industry}
-                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option value="Retail & Consumer Goods">Retail & Consumer Goods</option>
-                <option value="Hospitality & Agriculture">Hospitality & Agriculture</option>
-                <option value="Agriculture & Microfinance">Agriculture & Microfinance</option>
-                <option value="Manufacturing & Export">Manufacturing & Export</option>
-                <option value="Commercial Real Estate">Commercial Real Estate</option>
+                <option value="Banking & Capital Markets">Banking & Capital Markets</option>
+                <option value="Trade Finance & Cross-Border">Trade Finance & Cross-Border</option>
+                <option value="SME Lending & Mortgages">SME Lending & Mortgages</option>
+                <option value="Insurance & Wealth">Insurance & Wealth</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Geographic Region
+              </label>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="Southeast Asia">Southeast Asia</option>
+                <option value="South Asia">South Asia</option>
+                <option value="Middle East & Africa">Middle East & Africa</option>
+                <option value="Cross-Border Global">Cross-Border Global</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Evidence Methodology
+              </label>
+              <select
+                value={evidenceType}
+                onChange={(e) => setEvidenceType(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="Production Telemetry">Production Telemetry</option>
+                <option value="Audited Backtest">Audited Backtest</option>
+                <option value="Sandbox Simulation">Sandbox Simulation</option>
+                <option value="User Interview & Ops Review">User Interview & Ops Review</option>
               </select>
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        {/* Observation Content & Sensitivity Scanner */}
+        <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-foreground">2. Observation Narrative</h2>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Confidence:</span>
+              <span className="font-bold text-primary">{confidence}</span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
             <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Region Band
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Title / Summary Headline
               </label>
               <input
                 type="text"
-                value={formData.region}
-                onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                required
+                placeholder="e.g., Seasonal Q1 Cash-Flow Volatility in SME Exporters"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Observation Period
-              </label>
-              <input
-                type="text"
-                value={formData.observationPeriod}
-                onChange={(e) => setFormData({ ...formData, observationPeriod: e.target.value })}
-                placeholder="e.g. Q1 2026"
-                className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-foreground">
+                  Detailed Findings & Empirical Pattern
+                </label>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  No attachments in P0 (link to external evidence docs if needed)
+                </span>
+              </div>
+              <textarea
+                rows={5}
+                required
+                placeholder="Describe the operational pattern, observed model anomaly, or benchmark baseline. Avoid customer names, account numbers, or secret contract terms..."
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                className="w-full p-3.5 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-foreground mb-1.5">
-                Evidence Confidence
+              <label className="text-xs font-semibold text-foreground block mb-1">
+                Confidence Level
               </label>
-              <select
-                value={formData.confidence}
-                onChange={(e) => setFormData({ ...formData, confidence: e.target.value as any })}
-                className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="High">High (Broad Portfolio Backing)</option>
-                <option value="Medium">Medium (Cohort Observation)</option>
-                <option value="Preliminary">Preliminary (Single Sample)</option>
-              </select>
+              <div className="flex items-center gap-2">
+                {(['High', 'Medium', 'Preliminary'] as const).map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setConfidence(lvl)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                      confidence === lvl
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Visibility Choices (§10.1) */}
-          <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-wider text-foreground">
-              Intended Visibility Choice
+          {/* Real-time Sensitivity Heuristic Warning Banner */}
+          {sensitivityFlags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-1.5"
+            >
+              <div className="font-bold flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Sensitivity Scanner Flag ({sensitivityFlags.length})</span>
+              </div>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                {sensitivityFlags.map((flag, idx) => (
+                  <li key={idx}>{flag}</li>
+                ))}
+              </ul>
+              <p className="text-[10px] text-amber-700/80 dark:text-amber-300/80 pt-1">
+                Please sanitize any direct email addresses, bank account numbers, or confidential salary/contract keywords before submitting for collective review.
+              </p>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Visibility Choice */}
+        <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
+          <h2 className="text-sm font-bold text-foreground">3. Visibility & Perimeter Scope</h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setVisibilityChoice('within_organisation')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                visibilityChoice === 'within_organisation'
+                  ? 'bg-primary/5 border-primary shadow-sm ring-1 ring-primary/30'
+                  : 'bg-muted/30 border-border hover:border-primary/40'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Globe2 className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">Our Organisation</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Colleagues in your workspace can view this note. If submitted, research moderators review it for de-identified synthesis.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVisibilityChoice('private_to_author')}
+              className={`p-4 rounded-2xl border text-left transition-all ${
+                visibilityChoice === 'private_to_author'
+                  ? 'bg-primary/5 border-primary shadow-sm ring-1 ring-primary/30'
+                  : 'bg-muted/30 border-border hover:border-primary/40'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Lock className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-foreground">Private to Author</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Kept strictly confidential to your account. Colleagues cannot see this observation even if in the same tenant.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Independent Consents */}
+        <div className="p-6 rounded-3xl bg-card border border-border space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-foreground">4. Four Independent Consents</h2>
+            <span className="text-[10px] text-muted-foreground font-mono">Explicit & Unbundled</span>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {/* Consent 1 */}
+            <label className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consents.consent_process}
+                onChange={(e) =>
+                  setConsents({ ...consents, consent_process: e.target.checked })
+                }
+                className="mt-0.5 accent-primary w-4 h-4"
+              />
+              <div>
+                <span className="font-bold text-foreground block">
+                  1. Process for Anonymised Aggregation & Benchmarking
+                </span>
+                <span className="text-[11px] text-muted-foreground leading-relaxed">
+                  Permit Azentio's federated aggregation engine to index numeric metric distributions alongside other financial institutions.
+                </span>
+              </div>
             </label>
-            <div className="space-y-2 text-xs">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="visibilityChoice"
-                  value="private_to_author"
-                  checked={formData.visibilityChoice === 'private_to_author'}
-                  onChange={() => setFormData({ ...formData, visibilityChoice: 'private_to_author' })}
-                  className="mt-1 accent-emerald-500"
-                />
-                <div>
-                  <span className="font-semibold text-foreground">Private to Author (Default)</span>
-                  <p className="text-muted-foreground text-[11px]">
-                    Only you can view this draft. It is not shared within your organisation or community.
-                  </p>
-                </div>
-              </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="visibilityChoice"
-                  value="within_organisation"
-                  checked={formData.visibilityChoice === 'within_organisation'}
-                  onChange={() => setFormData({ ...formData, visibilityChoice: 'within_organisation' })}
-                  className="mt-1 accent-emerald-500"
-                />
-                <div>
-                  <span className="font-semibold text-foreground">Within Organisation</span>
-                  <p className="text-muted-foreground text-[11px]">
-                    Accessible to authorised members of {activeTenant.name}. Never exposed cross-tenant.
-                  </p>
-                </div>
-              </label>
+            {/* Consent 2 */}
+            <label className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consents.consent_publish}
+                onChange={(e) =>
+                  setConsents({ ...consents, consent_publish: e.target.checked })
+                }
+                className="mt-0.5 accent-primary w-4 h-4"
+              />
+              <div>
+                <span className="font-bold text-foreground block">
+                  2. Publish De-Identified Pattern in Shared Learning Feed
+                </span>
+                <span className="text-[11px] text-muted-foreground leading-relaxed">
+                  Allow moderators to publish a de-identified version into the cross-tenant knowledge feed. Zero organization names or author details are ever revealed.
+                </span>
+              </div>
+            </label>
 
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="visibilityChoice"
-                  value="propose_to_learning_community"
-                  checked={formData.visibilityChoice === 'propose_to_learning_community'}
-                  onChange={() => {
-                    setFormData({ ...formData, visibilityChoice: 'propose_to_learning_community' });
-                    setConsents((prev) => ({ ...prev, consent_publish: true }));
-                  }}
-                  className="mt-1 accent-emerald-500"
-                />
-                <div>
-                  <span className="font-semibold text-foreground">
-                    Propose to Learning Community (Governed Collective Hub)
-                  </span>
-                  <p className="text-muted-foreground text-[11px]">
-                    Submitted for moderator review. Approved copies are de-identified before entering the cross-client feed.
-                  </p>
-                </div>
-              </label>
-            </div>
+            {/* Consent 3 */}
+            <label className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consents.consent_attribution}
+                onChange={(e) =>
+                  setConsents({ ...consents, consent_attribution: e.target.checked })
+                }
+                className="mt-0.5 accent-primary w-4 h-4"
+              />
+              <div>
+                <span className="font-bold text-foreground block">
+                  3. Organization Attribution (Default Off)
+                </span>
+                <span className="text-[11px] text-muted-foreground leading-relaxed">
+                  Display an enterprise badge ({activeTenant.name}) on published shared findings. If unchecked, the item is labeled "Anonymous Tier-1 Bank".
+                </span>
+              </div>
+            </label>
+
+            {/* Consent 4 */}
+            <label className="flex items-start gap-3 p-3.5 rounded-xl bg-muted/40 border border-border/50 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consents.consent_training}
+                onChange={(e) =>
+                  setConsents({ ...consents, consent_training: e.target.checked })
+                }
+                className="mt-0.5 accent-primary w-4 h-4"
+              />
+              <div>
+                <span className="font-bold text-foreground block">
+                  4. Allow Foundation Model Fine-Tuning (Default Strictly OFF)
+                </span>
+                <span className="text-[11px] text-muted-foreground leading-relaxed">
+                  Opt-in to allow this observation's mathematical weights to be incorporated during quarterly foundational model fine-tuning. Completely optional.
+                </span>
+              </div>
+            </label>
           </div>
+        </div>
 
-          {/* Four Granular Consents (§10.2) */}
-          <div className="p-5 rounded-2xl bg-muted/40 border border-border space-y-3">
-            <span className="block text-xs font-bold uppercase tracking-wider text-foreground">
-              Granular Consent Record (Policy {consents.policyVersion})
-            </span>
-            <div className="space-y-2.5 text-xs">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consents.consent_process}
-                  onChange={(e) => setConsents({ ...consents, consent_process: e.target.checked })}
-                  className="rounded accent-emerald-500"
-                />
-                <span className="font-medium text-foreground">
-                  Consent to Process: Store and process observation internally
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consents.consent_publish}
-                  onChange={(e) => setConsents({ ...consents, consent_publish: e.target.checked })}
-                  className="rounded accent-emerald-500"
-                />
-                <span className="font-medium text-foreground">
-                  Consent to Publish: Publish reviewed, de-identified shared representation
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consents.consent_attribution}
-                  onChange={(e) => setConsents({ ...consents, consent_attribution: e.target.checked })}
-                  className="rounded accent-emerald-500"
-                />
-                <span className="font-medium text-foreground">
-                  Consent to Attribution (Opt-In): Disclose organisation name in shared view (Default off)
-                </span>
-              </label>
-
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={consents.consent_training}
-                  onChange={(e) => setConsents({ ...consents, consent_training: e.target.checked })}
-                  className="rounded accent-emerald-500"
-                />
-                <span className="font-medium text-foreground">
-                  Consent to Model Training: Future federated learning program (Default OFF & strictly separate)
-                </span>
-              </label>
-            </div>
+        {/* Live "Who Can See This Version" Card */}
+        <div className="p-5 rounded-2xl bg-muted/30 border border-border space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-primary" />
+            <span>Who Can See This Version</span>
+          </span>
+          <div className="text-xs text-foreground font-semibold">
+            Draft: <span className="font-normal text-muted-foreground">{whoCanSeeDraft.summary}</span>
           </div>
-
-          {/* Action Buttons: Save Draft vs Submit */}
-          <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={() => handleCreate(false)}
-              disabled={submitting}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-card border border-border text-foreground text-xs font-semibold hover:bg-muted transition-all"
-            >
-              <Save className="w-4 h-4 text-muted-foreground" />
-              <span>Save as Private Draft (Save ≠ Share)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleCreate(true)}
-              disabled={submitting}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-md shadow-emerald-500/20 hover:scale-105 active:scale-95"
-            >
-              <Send className="w-4 h-4" />
-              <span>Submit for Moderation Review</span>
-            </button>
+          <div className="text-xs text-foreground font-semibold">
+            Upon Submission:{' '}
+            <span className="font-normal text-muted-foreground">{whoCanSeeSubmitted.summary}</span>
           </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-border">
+          <Link
+            href="/client/observations"
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground text-center"
+          >
+            Cancel
+          </Link>
+
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => handleSave(false)}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all inline-flex items-center justify-center gap-2"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>Save as Draft</span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => handleSave(true)}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all inline-flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+          >
+            <Send className="w-4 h-4" />
+            <span>Submit Observation</span>
+          </button>
         </div>
       </div>
     </div>
   );
 }
-
