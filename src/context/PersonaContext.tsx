@@ -37,17 +37,25 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('azentio_current_persona');
-    if (saved && SEED_PERSONAS[saved]) {
-      setCurrentPersonaKey(saved);
-      setActor(SEED_PERSONAS[saved]);
-    }
     const savedCustom = localStorage.getItem('azentio_custom_actor');
     if (savedCustom) {
+      // A signed-in user session was persisted — restore it
       try {
         const parsed = JSON.parse(savedCustom);
         setActor(parsed);
-      } catch {}
+        setCurrentPersonaKey('custom');
+      } catch {
+        // Corrupted — clear it and stay as public
+        localStorage.removeItem('azentio_custom_actor');
+        localStorage.removeItem('azentio_current_persona');
+      }
+    } else {
+      // No signed-in session — restore named persona (or default to public)
+      const saved = localStorage.getItem('azentio_current_persona');
+      if (saved && SEED_PERSONAS[saved]) {
+        setCurrentPersonaKey(saved);
+        setActor(SEED_PERSONAS[saved]);
+      }
     }
     refreshOrganisations();
   }, []);
@@ -57,8 +65,14 @@ export function PersonaProvider({ children }: { children: React.ReactNode }) {
       const base = { ...SEED_PERSONAS[key] };
       setCurrentPersonaKey(key);
       setActor(base);
-      localStorage.setItem('azentio_current_persona', key);
+      // Always clear any custom (signed-in) actor when switching to a seed persona
       localStorage.removeItem('azentio_custom_actor');
+      if (key === 'public') {
+        // Returning to public — also remove the persona key so fresh loads start clean
+        localStorage.removeItem('azentio_current_persona');
+      } else {
+        localStorage.setItem('azentio_current_persona', key);
+      }
     }
   };
 

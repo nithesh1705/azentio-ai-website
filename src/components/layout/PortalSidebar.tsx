@@ -43,7 +43,11 @@ export function PortalSidebar() {
     pathname.startsWith('/publisher') ||
     pathname.startsWith('/admin');
 
-  const isPublic = currentPersonaKey === 'public' && actor.userId === 'usr-anonymous';
+  // isSignedIn = any real authenticated actor (not the anonymous public visitor)
+  const isSignedIn =
+    actor.userId !== 'usr-anonymous' &&
+    (actor.isVerifiedEmployee || actor.memberships.length > 0 || actor.platformGrants.length > 0);
+  const isPublic = !isSignedIn;
 
   // Do not render sidebar on purely public informational pages unless user is authenticated and navigating portal
   if (!isPortalRoute && isPublic) {

@@ -27,7 +27,11 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [insightsDropdownOpen, setInsightsDropdownOpen] = useState(false);
 
-  const isPublic = currentPersonaKey === 'public' && actor.userId === 'usr-anonymous';
+  // isSignedIn = any real authenticated actor (not the anonymous public visitor)
+  const isSignedIn =
+    actor.userId !== 'usr-anonymous' &&
+    (actor.isVerifiedEmployee || actor.memberships.length > 0 || actor.platformGrants.length > 0);
+  const isPublic = !isSignedIn;
 
   // Determine portal home path if signed in
   const getPortalHome = () => {
