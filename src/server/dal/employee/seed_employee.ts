@@ -721,3 +721,4 @@ export const SEED_TEAM_SUBMISSIONS: TeamSubmission[] = [
     submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
   },
 ];
+

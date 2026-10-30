@@ -9,7 +9,11 @@
 export const EMPLOYEE_ALLOWLIST: string[] = [
   'nithesh_m@azentio.com',
   'elena_vance@azentio.com',
+  'elena.rostova@azentio.com',
   'marcus_vance@azentio.com',
+  'marcus.vance@azentio.com',
+  'priya.sharma@azentio.com',
+  'priya_sharma@azentio.com',
   'sarah_jenkins@azentio.com',
   'ayman_haddad@azentio.com',
   'rahul_arora@azentio.com',

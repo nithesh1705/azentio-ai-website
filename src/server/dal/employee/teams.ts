@@ -213,3 +213,4 @@ export function saveTeamSubmission(
   store.logAudit(actor, 'submit_team_project', 'team', data.teamId, `Submitted hackathon project "${newSub.title}"`);
   return newSub;
 }
+

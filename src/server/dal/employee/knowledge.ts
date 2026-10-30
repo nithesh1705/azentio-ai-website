@@ -219,3 +219,4 @@ export function getKnowledgeVersions(actor: Actor, knowledgeId: string): Knowled
 
   return activeKnowledgeVersions.filter((v) => v.knowledgeId === knowledgeId);
 }
+

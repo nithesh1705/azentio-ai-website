@@ -20,3 +20,4 @@ export function getDeidentifiedObservationExcerpts(actor: Actor, observationIds:
     (obs) => observationIds.includes(obs.id) && obs.status === 'live'
   );
 }
+

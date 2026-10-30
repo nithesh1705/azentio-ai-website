@@ -156,3 +156,4 @@ export function reportLiveComment(actor: Actor, commentId: string): boolean {
 
   return true;
 }
+

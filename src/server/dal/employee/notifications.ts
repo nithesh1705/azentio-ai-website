@@ -49,3 +49,4 @@ export function deleteEmployeeNotification(actor: Actor, notificationId: string)
     (store as any).notifications.splice(index, 1);
   }
 }
+

@@ -218,22 +218,20 @@ export default function GuidedPlaygroundPage() {
                       if (step.id <= 3 || currentRun) setCurrentStep(step.id);
                     }}
                     disabled={step.id === 4 && !currentRun}
-                    className={`flex items-center gap-2.5 text-xs font-semibold whitespace-nowrap transition-all ${
-                      isActive
+                    className={`flex items-center gap-2.5 text-xs font-semibold whitespace-nowrap transition-all ${isActive
                         ? 'text-primary'
                         : isPassed
-                        ? 'text-foreground hover:text-primary cursor-pointer'
-                        : 'text-muted-foreground opacity-50 cursor-not-allowed'
-                    }`}
+                          ? 'text-foreground hover:text-primary cursor-pointer'
+                          : 'text-muted-foreground opacity-50 cursor-not-allowed'
+                      }`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
-                        isActive
+                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${isActive
                           ? 'bg-primary text-primary-foreground shadow-xs'
                           : isPassed
-                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-muted text-muted-foreground'
-                      }`}
+                            ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-muted text-muted-foreground'
+                        }`}
                     >
                       {isPassed ? <Check className="w-3.5 h-3.5" /> : step.id}
                     </div>
@@ -270,11 +268,10 @@ export default function GuidedPlaygroundPage() {
                   <div
                     key={offering.id}
                     onClick={() => setSelectedOfferingId(offering.id)}
-                    className={`cursor-pointer rounded-3xl p-5 border transition-all ${
-                      isSelected
+                    className={`cursor-pointer rounded-3xl p-5 border transition-all ${isSelected
                         ? 'border-primary bg-primary/5 shadow-md shadow-primary/5 ring-2 ring-primary/20'
                         : 'border-border bg-card hover:border-primary/40'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
@@ -342,11 +339,10 @@ export default function GuidedPlaygroundPage() {
                     <div
                       key={scen.id}
                       onClick={() => handleSelectScenario(scen)}
-                      className={`cursor-pointer p-4 rounded-2xl border transition-all ${
-                        isSelected
+                      className={`cursor-pointer p-4 rounded-2xl border transition-all ${isSelected
                           ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                           : 'border-border bg-card hover:border-primary/40'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -380,18 +376,16 @@ export default function GuidedPlaygroundPage() {
                         <div className="flex items-center bg-muted/60 p-1 rounded-xl text-xs">
                           <button
                             onClick={() => setInputViewMode('table')}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                              inputViewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
-                            }`}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${inputViewMode === 'table' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                              }`}
                           >
                             <TableIcon className="w-3.5 h-3.5" />
                             <span>Table</span>
                           </button>
                           <button
                             onClick={() => setInputViewMode('json')}
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                              inputViewMode === 'json' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
-                            }`}
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${inputViewMode === 'json' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground'
+                              }`}
                           >
                             <FileCode className="w-3.5 h-3.5" />
                             <span>JSON</span>
@@ -495,11 +489,10 @@ export default function GuidedPlaygroundPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div
                     onClick={() => setMode('deterministic')}
-                    className={`cursor-pointer p-4 rounded-2xl border transition-all ${
-                      mode === 'deterministic'
+                    className={`cursor-pointer p-4 rounded-2xl border transition-all ${mode === 'deterministic'
                         ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                         : 'border-border bg-muted/20 hover:border-border/80'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -515,11 +508,10 @@ export default function GuidedPlaygroundPage() {
 
                   <div
                     onClick={() => setMode('ai_assisted')}
-                    className={`cursor-pointer p-4 rounded-2xl border transition-all ${
-                      mode === 'ai_assisted'
+                    className={`cursor-pointer p-4 rounded-2xl border transition-all ${mode === 'ai_assisted'
                         ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                         : 'border-border bg-muted/20 hover:border-border/80'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -682,22 +674,20 @@ export default function GuidedPlaygroundPage() {
                   {currentRun.trace.map((t) => (
                     <div
                       key={t.step}
-                      className={`p-3.5 rounded-2xl border transition-all ${
-                        t.status === 'flagged'
+                      className={`p-3.5 rounded-2xl border transition-all ${t.status === 'flagged'
                           ? 'border-amber-500/30 bg-amber-500/5'
                           : 'border-border/60 bg-muted/20'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-bold text-foreground">
                           {t.step}. {t.title}
                         </span>
                         <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
-                            t.status === 'flagged'
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${t.status === 'flagged'
                               ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold'
                               : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                          }`}
+                            }`}
                         >
                           {t.status.toUpperCase()}
                         </span>
@@ -778,11 +768,10 @@ export default function GuidedPlaygroundPage() {
                         className="p-1 hover:scale-110 transition-transform"
                       >
                         <Star
-                          className={`w-5 h-5 ${
-                            star <= feedbackRating
+                          className={`w-5 h-5 ${star <= feedbackRating
                               ? 'text-amber-500 fill-amber-500'
                               : 'text-muted-foreground/30'
-                          }`}
+                            }`}
                         />
                       </button>
                     ))}
@@ -798,11 +787,10 @@ export default function GuidedPlaygroundPage() {
                         type="button"
                         key={opt}
                         onClick={() => setFeedbackCorrectness(opt)}
-                        className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize border transition-all ${
-                          feedbackCorrectness === opt
+                        className={`px-3 py-1 rounded-xl text-xs font-semibold capitalize border transition-all ${feedbackCorrectness === opt
                             ? 'bg-primary text-primary-foreground border-primary'
                             : 'border-border bg-muted/30 text-muted-foreground'
-                        }`}
+                          }`}
                       >
                         {opt}
                       </button>
