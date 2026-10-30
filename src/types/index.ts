@@ -229,6 +229,7 @@ export interface UserRecord {
   id: string;
   name: string;
   email: string;
+  password?: string;
   orgId: string;
   role: string;
   platformGrants: string[];

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllUsers } from '@/server/dal/store';
+import { getAllUsers, getOrganisations } from '@/server/dal/store';
 
 export async function GET() {
   const users = getAllUsers();
-  return NextResponse.json({ users });
+  const organisations = getOrganisations();
+  return NextResponse.json({ users, organisations });
 }
 

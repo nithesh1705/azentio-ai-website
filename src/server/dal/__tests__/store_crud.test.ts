@@ -18,16 +18,33 @@ const portalAdminActor: Actor = {
   email: 'max_verstappen@azentio.com',
   platformGrants: ['portal_admin', 'learning_moderator', 'content_publisher', 'product_owner'],
   memberships: [],
+  activeTenantId: null,
   isVerifiedEmployee: true,
 };
 
 describe('Dynamic Auth and Admin Store Operations', () => {
-  it('authenticates seeded users from the database', () => {
-    const auth = authenticateUser('max_verstappen@azentio.com');
+  it('authenticates seeded users from the database with password and organisation validation', () => {
+    // Valid password & org
+    const auth = authenticateUser('max_verstappen@azentio.com', 'admin123', 'org-azentio');
     expect(auth.user.email).toBe('max_verstappen@azentio.com');
     expect(auth.user.role).toBe('portal_admin');
     expect(auth.redirectPath).toBe('/admin/orgs');
     expect(auth.actor.platformGrants).toContain('portal_admin');
+
+    // Wrong password throws error
+    expect(() =>
+      authenticateUser('max_verstappen@azentio.com', 'wrongpassword', 'org-azentio')
+    ).toThrowError(/Invalid password/);
+
+    // Mismatched organisation throws error
+    expect(() =>
+      authenticateUser('max_verstappen@azentio.com', 'admin123', 'org-abcd')
+    ).toThrowError(/does not have authorized access to organisation/);
+
+    // Client user authentication
+    const clientAuth = authenticateUser('virat_kohli@abcd.in', 'cleint123', 'org-abcd');
+    expect(clientAuth.user.name).toBe('Virat Kohli');
+    expect(clientAuth.redirectPath).toBe('/client');
   });
 
   it('rejects unknown emails not present in database', () => {

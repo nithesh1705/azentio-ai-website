@@ -4,7 +4,7 @@ import { authenticateUser } from '@/server/dal/store';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email } = body;
+    const { email, password, orgId } = body;
 
     if (!email) {
       return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const authResult = authenticateUser(email);
+    const authResult = authenticateUser(email, password, orgId);
 
     return NextResponse.json({
       success: true,

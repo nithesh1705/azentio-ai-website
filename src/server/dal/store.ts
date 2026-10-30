@@ -753,6 +753,7 @@ export function createUser(
     email: string;
     orgId: string;
     role: string;
+    password?: string;
   }
 ): UserRecord {
   const decision = authorize(actor, 'manage_org', {
@@ -802,6 +803,7 @@ export function createUser(
     id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: data.name,
     email: data.email,
+    password: data.password || 'azentio123',
     orgId: data.orgId,
     role: data.role,
     platformGrants,
@@ -1015,7 +1017,11 @@ export function deleteOrganisation(actor: Actor, orgId: string): { success: bool
  * Dynamic Database Authentication Engine
  * Fetches user identity, active tenant, and platform grants strictly from the DB!
  */
-export function authenticateUser(email: string): {
+export function authenticateUser(
+  email: string,
+  password?: string,
+  orgId?: string
+): {
   actor: Actor;
   redirectPath: string;
   user: UserRecord;
@@ -1029,13 +1035,43 @@ export function authenticateUser(email: string): {
     );
   }
 
+  // If organization specified, verify user affiliation
+  if (orgId) {
+    const isMemberOfOrg =
+      user.orgId === orgId ||
+      user.memberships?.some((m) => m.orgId === orgId);
+    if (!isMemberOfOrg) {
+      const selectedOrg = store.organisations.find((o) => o.id === orgId);
+      const orgName = selectedOrg ? selectedOrg.name : orgId;
+      throw new Error(
+        `Access Denied: The account "${user.email}" does not have authorized access to organisation "${orgName}".`
+      );
+    }
+  }
+
+  // If password provided or password required
+  if (password !== undefined) {
+    if (user.password && user.password !== password) {
+      throw new Error(
+        `Invalid password for "${user.email}". Please verify your credentials.`
+      );
+    }
+  }
+
+  const activeTenantId =
+    orgId && orgId !== 'org-azentio'
+      ? orgId
+      : user.memberships && user.memberships.length > 0
+      ? user.memberships[0].orgId
+      : null;
+
   const actor: Actor = {
     userId: user.id,
     name: user.name,
     email: user.email,
     platformGrants: user.platformGrants || [],
     memberships: user.memberships || [],
-    activeTenantId: user.memberships && user.memberships.length > 0 ? user.memberships[0].orgId : null,
+    activeTenantId,
     isVerifiedEmployee: user.isVerifiedEmployee,
     avatar: user.avatar,
   };

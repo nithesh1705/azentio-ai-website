@@ -22,12 +22,14 @@ import {
   Layers,
   Settings,
   Users,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { getNotifications } from '@/server/dal/store';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { actor, currentPersonaKey, activeTenant } = usePersona();
+  const { actor, currentPersonaKey, setPersona, activeTenant } = usePersona();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -35,7 +37,7 @@ export function Navbar() {
   const notifications = getNotifications(actor);
   const unreadCount = notifications.filter((n) => n.state === 'stored').length;
 
-  const isPublic = currentPersonaKey === 'public';
+  const isPublic = currentPersonaKey === 'public' && actor.userId === 'usr-anonymous';
   const isEmployee = actor.isVerifiedEmployee;
   const isClient = actor.memberships.some((m) => m.status === 'active');
   const isModerator = actor.platformGrants.includes('learning_moderator');
@@ -46,7 +48,7 @@ export function Navbar() {
   );
 
   return (
-    <header className="sticky top-7 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
@@ -234,6 +236,42 @@ export function Navbar() {
             <span>Request Demo</span>
           </Link>
 
+          {/* Sign In / Active Session Action */}
+          {isPublic ? (
+            <Link
+              href="/sign-in"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href="/sign-in"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-card/80 hover:bg-accent text-foreground transition-all shadow-sm"
+                title="Switch Account or View Credentials"
+              >
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-semibold truncate max-w-[110px]">{actor.name}</span>
+                <span className="text-[10px] text-muted-foreground uppercase px-1 py-0.5 rounded bg-muted/80">
+                  {actor.isVerifiedEmployee ? 'Employee' : 'Client'}
+                </span>
+              </Link>
+              <button
+                onClick={() => {
+                  setPersona('public');
+                  window.location.href = '/';
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
+                title="Sign Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Sign Out</span>
+              </button>
+            </div>
+          )}
+
           {/* Mobile hamburger button */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -315,6 +353,30 @@ export function Navbar() {
             >
               Request Demo
             </Link>
+            <div className="pt-2 border-t border-border mt-2">
+              {isPublic ? (
+                <Link
+                  href="/sign-in"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-emerald-500 hover:bg-emerald-500/10"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    setPersona('public');
+                    setMobileMenuOpen(false);
+                    window.location.href = '/';
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-500 hover:bg-rose-500/10"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out ({actor.name})</span>
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { PersonaProvider } from '@/context/PersonaContext';
-import { PersonaSwitcherBar } from '@/components/layout/PersonaSwitcherBar';
 import { Navbar } from '@/components/layout/Navbar';
 import { AIRAWidget } from '@/components/aira/AIRAWidget';
 import Link from 'next/link';
@@ -27,9 +26,6 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <PersonaProvider>
-            {/* Top Interactive Evaluation Switcher */}
-            <PersonaSwitcherBar />
-
             {/* Main Navigation */}
             <Navbar />
 
