@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
 import {
@@ -148,9 +149,14 @@ export default function SignInPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <div className="text-center mb-10">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-emerald-500/20">
-          <Sparkles className="w-6 h-6" />
-        </div>
+        <Image
+          src="/logo.png"
+          alt="Azentio Logo"
+          width={56}
+          height={56}
+          className="w-14 h-14 rounded-2xl object-contain mx-auto mb-4 shadow-lg shadow-emerald-500/20"
+          priority
+        />
         <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
           Sign In to azentio.ai
         </h1>

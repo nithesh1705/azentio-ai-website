@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
@@ -120,9 +121,14 @@ export function Navbar() {
         <div className="h-14 px-4 flex items-center justify-between">
           {/* Logo — links to portal home */}
           <Link href={getPortalHome()} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-4 h-4" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Azentio Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-xl object-contain shadow-sm shadow-emerald-500/20 group-hover:scale-105 transition-transform"
+              priority
+            />
             <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400">
               azentio.ai
             </span>
@@ -205,9 +211,14 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5" />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Azentio Logo"
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-xl object-contain shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform"
+            priority
+          />
           <div className="flex flex-col">
             <span className="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400">
               azentio.ai

@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   title: 'azentio.ai — Enterprise AI & Governed Collective Learning',
   description:
     'Enterprise AI showcase, exclusive client and employee portals, and governed collective learning for financial services.',
+  icons: {
+    icon: [
+      { url: '/favicon.jpeg', type: 'image/jpeg' },
+    ],
+    shortcut: '/favicon.jpeg',
+    apple: '/favicon.jpeg',
+  },
 };
 
 export default function RootLayout({

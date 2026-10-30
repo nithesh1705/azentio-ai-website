@@ -77,7 +77,7 @@ export function PeekingRobot() {
             aria-label="Show Demo Assistant"
           >
             <div className="flex flex-col items-center gap-1">
-              <span className="text-xs group-hover:scale-125 transition-transform">🤖</span>
+              {/* <span className="text-xs group-hover:scale-125 transition-transform">🤖</span> */}
               <span className="text-[9px] font-bold uppercase [writing-mode:vertical-rl] tracking-widest text-emerald-100">
                 Demo
               </span>
@@ -312,3 +312,4 @@ export function PeekingRobot() {
     </>
   );
 }
+

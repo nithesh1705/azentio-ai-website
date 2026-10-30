@@ -77,7 +77,7 @@ export default function HomePage() {
       {/* ── 1. HERO SECTION ──────────────────────────────────────────────── */}
       <section className="relative pt-16 pb-20 md:pt-24 md:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Animated Badge */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -86,7 +86,7 @@ export default function HomePage() {
           <Sparkles className="w-4 h-4 text-emerald-500" />
           <span>Purpose-Built Enterprise Technology for BFSI & ERP</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        </motion.div>
+        </motion.div> */}
 
         {/* Hero Title */}
         <motion.h1
@@ -186,11 +186,10 @@ export default function HomePage() {
               <button
                 key={dom.id}
                 onClick={() => setActiveDomainIndex(idx)}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${
-                  isActive
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-bold transition-all ${isActive
                     ? 'bg-card text-foreground shadow-md border border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
                     : 'text-muted-foreground hover:text-foreground hover:bg-card/40'
-                }`}
+                  }`}
               >
                 <span>{dom.name}</span>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}

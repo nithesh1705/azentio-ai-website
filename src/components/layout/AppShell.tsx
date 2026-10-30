@@ -7,6 +7,7 @@ import { PortalSidebar } from './PortalSidebar';
 import { AIRAWidget } from '@/components/aira/AIRAWidget';
 import { PeekingRobot } from '@/components/widgets/PeekingRobot';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Sparkles, Shield, Cpu, ExternalLink } from 'lucide-react';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -41,9 +42,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </div>
+                      <Image
+                        src="/logo.png"
+                        alt="Azentio Logo"
+                        width={28}
+                        height={28}
+                        className="w-7 h-7 rounded-lg object-contain shadow-sm"
+                      />
                       <span className="font-bold text-foreground">azentio.ai</span>
                     </div>
                     <p className="text-muted-foreground leading-relaxed">

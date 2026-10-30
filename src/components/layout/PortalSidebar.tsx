@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
@@ -86,9 +87,13 @@ export function PortalSidebar() {
         <div className="flex items-center justify-between pb-3 border-b border-border/60">
           {!collapsed ? (
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm font-bold text-xs">
-                AI
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Azentio Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-xl object-contain shadow-sm shrink-0"
+              />
               <div className="flex flex-col">
                 <span className="font-extrabold text-xs tracking-tight text-foreground">
                   Workspace Portal
@@ -99,9 +104,13 @@ export function PortalSidebar() {
               </div>
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center font-bold text-xs mx-auto">
-              AI
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Azentio Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8 rounded-xl object-contain shadow-sm mx-auto shrink-0"
+            />
           )}
 
           <button
