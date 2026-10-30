@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Navbar } from './Navbar';
 import { PortalSidebar } from './PortalSidebar';
 import { AIRAWidget } from '@/components/aira/AIRAWidget';
+import { PeekingRobot } from '@/components/widgets/PeekingRobot';
 import Link from 'next/link';
 import { Sparkles, Shield, Cpu, ExternalLink } from 'lucide-react';
 
@@ -151,6 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Interactive AIRA AI Assistant */}
       <AIRAWidget />
+
+      {/* Peeking Robot for Public Pages */}
+      <PeekingRobot />
     </div>
   );
 }

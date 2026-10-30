@@ -62,3 +62,50 @@ export async function fetchOrganisationsFromSupabase(): Promise<Organisation[] |
   }
 }
 
+/**
+ * Insert a contact enquiry into Supabase 'contact_enquiries' table
+ */
+export async function insertContactEnquiryToSupabase(enquiry: {
+  fullName: string;
+  workEmail: string;
+  companyName: string;
+  country: string;
+  interestDomain: string;
+  message: string;
+  phone?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const row: Record<string, any> = {
+      full_name: enquiry.fullName,
+      work_email: enquiry.workEmail,
+      company_name: enquiry.companyName,
+      country: enquiry.country || 'Global',
+      interest_domain: enquiry.interestDomain || 'General',
+      message: enquiry.message,
+    };
+
+    if (enquiry.phone) {
+      row.phone = enquiry.phone;
+    }
+
+    // Try inserting with phone first
+    const res = await supabase.from('contact_enquiries').insert([row]);
+    if (res.error) {
+      // If phone column doesn't exist (PGRST204), fallback by appending phone to message
+      if (res.error.code === 'PGRST204' && row.phone) {
+        delete row.phone;
+        row.message = `[Phone: ${enquiry.phone}]\n\n${enquiry.message}`;
+        const fallbackRes = await supabase.from('contact_enquiries').insert([row]);
+        if (fallbackRes.error) {
+          return { success: false, error: fallbackRes.error.message };
+        }
+        return { success: true };
+      }
+      return { success: false, error: res.error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Database error' };
+  }
+}
+

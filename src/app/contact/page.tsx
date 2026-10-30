@@ -15,53 +15,76 @@ import {
   Clock,
   Sparkles,
   ArrowRight,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { getPresenceOffices } from '@/server/dal/store';
 
-const OFFICES = [
-  {
-    city: 'Singapore',
-    region: 'Global HQ',
-    address: '8 Marina Boulevard, #05-02 Marina Bay Financial Centre, Singapore 018981',
-    phone: '+65 6818 6000',
-    email: 'singapore@azentio.com',
-  },
-  {
-    city: 'Dubai',
-    region: 'Middle East & Africa HQ',
-    address: 'Level 14, Al Saada Tower, Dubai International Financial Centre, UAE',
-    phone: '+971 4 362 7000',
-    email: 'dubai@azentio.com',
-  },
-  {
-    city: 'Mumbai',
-    region: 'India & South Asia Tech Hub',
-    address: 'B-Wing, 9th Floor, Nesco IT Park, Western Express Highway, Goregaon, Mumbai 400063',
-    phone: '+91 22 6700 8000',
-    email: 'india@azentio.com',
-  },
-  {
-    city: 'London',
-    region: 'European Operations',
-    address: '1 Canada Square, 37th Floor, Canary Wharf, London E14 5AA, United Kingdom',
-    phone: '+44 20 7947 1000',
-    email: 'london@azentio.com',
-  },
+const COMMON_COUNTRIES = [
+  'Singapore',
+  'United Arab Emirates',
+  'Saudi Arabia',
+  'Bahrain',
+  'India',
+  'United States',
+  'Malaysia',
+  'United Kingdom',
+  'Kenya',
+  'Egypt',
+  'Nigeria',
+  'Philippines',
+  'Thailand',
+  'Lebanon',
+  'Other',
 ];
 
 export default function ContactPage() {
+  const offices = getPresenceOffices().slice(0, 4); // Featured primary hubs
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     company: '',
     phone: '',
-    topic: 'Enterprise AI Solutions',
+    country: 'Singapore',
+    topic: 'Banking (iMAL & Islamic Core)',
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: formData.name,
+          workEmail: formData.email,
+          companyName: formData.company,
+          country: formData.country,
+          interestDomain: formData.topic,
+          message: formData.message,
+          phone: formData.phone || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit enquiry. Please try again.');
+      }
+
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err?.message || 'Network error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -92,13 +115,24 @@ export default function ContactPage() {
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-foreground">Message Received</h3>
+              <h3 className="text-2xl font-bold text-foreground">Message Saved & Received</h3>
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Thank you for reaching out, <span className="font-semibold text-foreground">{formData.name}</span>. An Azentio enterprise AI director will review your enquiry and respond within 24 hours.
+                Thank you for reaching out, <span className="font-semibold text-foreground">{formData.name}</span>. Your enquiry has been securely logged in our enterprise registry and an Azentio client director will respond within 24 hours.
               </p>
               <div className="pt-4">
                 <button
-                  onClick={() => setSubmitted(false)}
+                  onClick={() => {
+                    setSubmitted(false);
+                    setFormData({
+                      name: '',
+                      email: '',
+                      company: '',
+                      phone: '',
+                      country: 'Singapore',
+                      topic: 'Banking (iMAL & Islamic Core)',
+                      message: '',
+                    });
+                  }}
                   className="px-6 py-2.5 rounded-xl text-xs font-semibold border border-border hover:bg-accent text-foreground transition-all"
                 >
                   Send Another Message
@@ -113,6 +147,13 @@ export default function ContactPage() {
                   All communications are encrypted and processed under strict enterprise NDA boundaries.
                 </p>
               </div>
+
+              {error && (
+                <div className="flex items-center gap-2 p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -157,25 +198,40 @@ export default function ContactPage() {
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="e.g. +1 (555) 019-2834"
+                    placeholder="e.g. +65 6956 7503"
                     className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-foreground">Topic of Inquiry</label>
-                <select
-                  value={formData.topic}
-                  onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
-                >
-                  <option value="Enterprise AI Solutions">Enterprise AI Solutions Evaluation</option>
-                  <option value="Governed Collective Intelligence">Governed Collective Intelligence & Federated Sandbox</option>
-                  <option value="Compliance & Regulatory Auditing">Compliance & Regulatory Auditing (AML / CBE / FAI)</option>
-                  <option value="Hackathon & Academic Partnerships">Hackathon & Academic Partnerships</option>
-                  <option value="Careers & Talent">Careers & Talent Opportunities</option>
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Country / Region *</label>
+                  <select
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  >
+                    {COMMON_COUNTRIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground">Area of Interest *</label>
+                  <select
+                    value={formData.topic}
+                    onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all"
+                  >
+                    <option value="Banking (iMAL & Islamic Core)">Banking (iMAL & Islamic Core)</option>
+                    <option value="Capital Markets (MFund Plus & Wealth)">Capital Markets (MFund Plus & Wealth)</option>
+                    <option value="Risk & Compliance (AMLOCK Surveillance)">Risk & Compliance (AMLOCK Surveillance)</option>
+                    <option value="Insurance (Beyontec Core & Automation)">Insurance (Beyontec Core & Automation)</option>
+                    <option value="ERP (AION ERP Multi-Company)">ERP (AION ERP Multi-Company)</option>
+                    <option value="Collective Intelligence & AI Sandbox">Collective Intelligence & AI Sandbox</option>
+                  </select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
@@ -197,10 +253,20 @@ export default function ContactPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95"
+                  disabled={submitting}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-xs bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-60"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Send Inquiry</span>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send Inquiry</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -216,38 +282,46 @@ export default function ContactPage() {
                 Global Corporate Hubs
               </h2>
               <p className="text-xs text-muted-foreground">
-                Operating across key financial capitals with 24/7 mission-critical support.
+                Operating across 17 global locations with 24/7 mission-critical support.
               </p>
             </div>
 
             <div className="space-y-4">
-              {OFFICES.map((office) => (
+              {offices.map((office) => (
                 <div
-                  key={office.city}
+                  key={office.id}
                   className="p-4 rounded-2xl bg-card/60 border border-border/80 hover:border-emerald-500/40 transition-all space-y-2 text-xs"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-sm">{office.city}</span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      {office.region}
+                      {office.country}
                     </span>
                   </div>
                   <p className="text-muted-foreground flex items-start gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
                     <span>{office.address}</span>
                   </p>
-                  <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3 text-emerald-500" />
-                      {office.phone}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-3 h-3 text-cyan-500" />
-                      {office.email}
-                    </span>
-                  </div>
+                  {office.phone && (
+                    <div className="flex items-center gap-4 text-[11px] text-muted-foreground pt-1">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 text-emerald-500" />
+                        {office.phone}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
+            </div>
+
+            <div className="pt-2">
+              <Link
+                href="/our-presence"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+              >
+                <span>View all 17 global offices</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-2">
@@ -272,4 +346,3 @@ export default function ContactPage() {
     </div>
   );
 }
-

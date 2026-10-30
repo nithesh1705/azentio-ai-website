@@ -16,6 +16,7 @@ import {
 } from '@/types';
 import { authorize } from '@/server/policy/authorize';
 import bcrypt from 'bcryptjs';
+import { insertContactEnquiryToSupabase } from './supabase';
 import {
   SEED_ORGANISATIONS,
   SEED_USERS,
@@ -202,13 +203,29 @@ export function getCareerPositions(): CareerPosition[] {
   return store.careers;
 }
 
-export function submitContactEnquiry(enquiry: Omit<ContactEnquiry, 'id' | 'submittedAt'>): ContactEnquiry {
+export async function submitContactEnquiry(enquiry: Omit<ContactEnquiry, 'id' | 'submittedAt'>): Promise<ContactEnquiry> {
   const newEnquiry: ContactEnquiry = {
     ...enquiry,
     id: `contact-${Date.now()}`,
     submittedAt: new Date().toISOString(),
   };
   store.contactEnquiries.unshift(newEnquiry);
+
+  // Asynchronously sync to Supabase table
+  try {
+    await insertContactEnquiryToSupabase({
+      fullName: enquiry.fullName,
+      workEmail: enquiry.workEmail,
+      companyName: enquiry.companyName,
+      country: enquiry.country || 'Global',
+      interestDomain: enquiry.interestDomain,
+      message: enquiry.message,
+      phone: enquiry.phone,
+    });
+  } catch (err) {
+    console.error('Failed to sync contact enquiry to Supabase:', err);
+  }
+
   return newEnquiry;
 }
 

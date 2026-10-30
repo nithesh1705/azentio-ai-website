@@ -407,5 +407,6 @@ export interface ContactEnquiry {
   country: string;
   interestDomain: string;
   message: string;
+  phone?: string;
   submittedAt: string;
 }
