@@ -57,7 +57,13 @@ export interface ResourceRef {
   | 'team'
   | 'team_note'
   | 'notification'
-  | 'audit_event';
+  | 'audit_event'
+  | 'demo'
+  | 'saved_scenario'
+  | 'client_resource'
+  | 'bookmark'
+  | 'saved_search'
+  | 'terms_acceptance';
   id?: string;
   audience: ResourceAudience;
   orgId?: string | null;
@@ -641,3 +647,177 @@ export interface TeamSubmission {
   submittedAt: string;
 }
 
+
+
+// ============================================================================
+// CLIENT PORTAL (MEMBER & ADMIN) TYPES
+// ============================================================================
+
+export interface TermsAcceptance {
+  userId: string;
+  orgId: string;
+  version: string;
+  acceptedAt: string;
+}
+
+export interface ClientInvitation {
+  id: string;
+  tokenHash: string;
+  orgId: string;
+  orgName: string;
+  email: string;
+  role: 'client_member' | 'client_admin';
+  invitedBy: string;
+  invitedByName: string;
+  expiresAt: string;
+  usedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
+}
+
+export interface EntitlementRequest {
+  id: string;
+  orgId: string;
+  orgName: string;
+  offeringId: string;
+  offeringName: string;
+  requestedBy: string;
+  requestedByName: string;
+  businessJustification: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+}
+
+export interface ClientDemo {
+  id: string;
+  offeringId: string;
+  offeringName: string;
+  name: string;
+  description: string;
+  synthetic: true;
+  category: 'Banking' | 'Lending' | 'Intelligence' | 'Compliance';
+  scenarios: DemoScenario[];
+}
+
+export interface DemoScenario {
+  id: string;
+  demoId: string;
+  title: string;
+  description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  inputData: Record<string, any>;
+  parameters: {
+    key: string;
+    label: string;
+    type: 'number' | 'string' | 'boolean' | 'select';
+    default: any;
+    options?: string[];
+  }[];
+}
+
+export interface DemoRun {
+  id: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  demoId: string;
+  scenarioId: string;
+  scenarioTitle: string;
+  mode: 'deterministic' | 'ai_assisted';
+  params: Record<string, any>;
+  outputSummary: string;
+  metrics: { label: string; value: string; delta?: string }[];
+  trace: { step: number; title: string; detail: string; status: 'ok' | 'flagged' }[];
+  evidence: { rule: string; matchedField: string; confidence: number; note: string }[];
+  status: 'completed' | 'failed';
+  createdAt: string;
+}
+
+export interface SavedScenario {
+  id: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  name: string;
+  scenarioId: string;
+  scenarioTitle: string;
+  params: Record<string, any>;
+  shareScope: 'private' | 'org';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DemoFeedback {
+  id: string;
+  runId: string;
+  userId: string;
+  rating: number; // 1 - 5
+  isCorrect: 'yes' | 'partly' | 'no';
+  comments: string;
+  submittedAt: string;
+}
+
+export interface SavedSearch {
+  id: string;
+  userId: string;
+  orgId: string;
+  title: string;
+  query: string;
+  filters: Record<string, string>;
+  notifyNewMatches: boolean;
+  createdAt: string;
+}
+
+export interface Bookmark {
+  id: string;
+  userId: string;
+  orgId: string;
+  targetType: 'observation' | 'theme' | 'demo' | 'scenario';
+  targetId: string;
+  title: string;
+  snippet?: string;
+  url: string;
+  createdAt: string;
+}
+
+export interface ClientResource {
+  id: string;
+  title: string;
+  type: 'briefing' | 'release_note' | 'webinar';
+  summary: string;
+  body: string;
+  date: string;
+  audience: 'entitled';
+  offeringId?: string;
+  offeringName?: string;
+  webinarDetails?: {
+    startTime: string;
+    durationMinutes: number;
+    speakerName: string;
+    speakerRole: string;
+  };
+}
+
+export interface WebinarRegistration {
+  id: string;
+  webinarId: string;
+  userId: string;
+  userEmail: string;
+  orgId: string;
+  registeredAt: string;
+}
+
+export interface ClientComment {
+  id: string;
+  parentKind: 'observation' | 'theme' | 'idea';
+  parentId: string;
+  orgId: string;
+  userId: string;
+  userName: string;
+  avatar?: string;
+  body: string;
+  audience: 'tenant' | 'shared_learning';
+  createdAt: string;
+  updatedAt?: string;
+  reported?: boolean;
+}
