@@ -71,12 +71,17 @@ export default {
             transform: 'translateX(100%)',
           },
         },
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.3s ease-out forwards',
         'fade-in-up': 'fade-in-up 0.4s ease-out forwards',
         'pulse-subtle': 'pulse-subtle 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         shimmer: 'shimmer 2s infinite',
+        marquee: 'marquee 35s linear infinite',
       },
     },
   },

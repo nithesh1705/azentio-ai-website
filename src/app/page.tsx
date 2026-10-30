@@ -40,13 +40,13 @@ export default function HomePage() {
   const [activeDomainIndex, setActiveDomainIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-advance domain scroller every 4.5s unless paused by user interaction
+  // Auto-advance domain scroller every 4 seconds unless explicitly paused by user
   useEffect(() => {
     if (isPaused) return;
-    const interval = setInterval(() => {
+    const timer = setInterval(() => {
       setActiveDomainIndex((prev) => (prev + 1) % domains.length);
-    }, 4500);
-    return () => clearInterval(interval);
+    }, 4000);
+    return () => clearInterval(timer);
   }, [isPaused, domains.length]);
 
   const activeDomain = domains[activeDomainIndex];
@@ -145,8 +145,8 @@ export default function HomePage() {
 
         {/* Infinite CSS marquee animation */}
         <div className="relative w-full overflow-hidden flex [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <div className="flex shrink-0 items-center gap-8 py-2 animate-marquee">
-            {partners.concat(partners).map((partner, idx) => (
+          <div className="flex shrink-0 items-center gap-8 py-2 animate-marquee hover:[animation-play-state:paused]">
+            {partners.concat(partners).concat(partners).map((partner, idx) => (
               <div
                 key={`partner-${idx}`}
                 className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border/50 bg-background/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-emerald-500/40 transition-colors whitespace-nowrap shadow-xs"

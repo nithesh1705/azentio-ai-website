@@ -199,17 +199,9 @@ export default function AboutPage() {
         </div>
 
         {/* Continuous auto-scroller with hover-pause */}
-        <div
-          className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] py-4"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <div
-            className={`flex shrink-0 items-center gap-4 py-2 ${
-              isHovered ? '' : 'animate-marquee'
-            }`}
-          >
-            {offices.concat(offices).map((office, idx) => (
+        <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] py-4">
+          <div className="flex shrink-0 items-center gap-4 py-2 animate-marquee-slow hover:[animation-play-state:paused]">
+            {offices.concat(offices).concat(offices).map((office, idx) => (
               <div
                 key={`office-${idx}`}
                 className="w-64 p-4 rounded-2xl border border-border bg-card shadow-sm hover:border-emerald-500/50 hover:shadow-md transition-all shrink-0"

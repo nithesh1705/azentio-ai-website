@@ -91,3 +91,35 @@
   @apply bg-slate-400 dark:bg-slate-600;
 }
 
+/* Continuous Marquee Auto-Scroll Animations */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex !important;
+  width: max-content !important;
+  animation: marquee-scroll 32s linear infinite !important;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused !important;
+}
+
+.animate-marquee-slow {
+  display: flex !important;
+  width: max-content !important;
+  animation: marquee-scroll 45s linear infinite !important;
+  will-change: transform;
+}
+
+.animate-marquee-slow:hover {
+  animation-play-state: paused !important;
+}
+
