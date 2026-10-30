@@ -344,8 +344,9 @@ export interface PresenceOffice {
   country: string;
   region: 'Asia Pacific' | 'Middle East' | 'Africa' | 'South Asia' | 'Americas';
   isHeadquarters?: boolean;
-  type: 'Corporate HQ' | 'Regional Office' | 'Innovation & Delivery' | 'Support Hub';
+  type: string;
   address?: string;
+  phone?: string;
   established?: string;
 }
 

@@ -80,15 +80,21 @@ export default function PresencePage() {
                 {office.country}
               </div>
 
-              <div className="mt-4 p-3 rounded-xl bg-muted/30 border border-border/40 text-xs text-muted-foreground leading-relaxed">
-                <div className="font-bold text-foreground text-[11px] mb-1">{office.type}</div>
-                {office.address || `${office.city} Commercial Financial Hub`}
+              <div className="mt-4 p-3.5 rounded-xl bg-muted/30 border border-border/40 text-xs text-muted-foreground leading-relaxed space-y-2">
+                <div className="font-bold text-foreground text-[11px] uppercase tracking-wider">{office.type}</div>
+                <p className="text-foreground/90 font-medium">{office.address}</p>
+                {office.phone && (
+                  <div className="pt-2 border-t border-border/40 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold font-mono text-[11px]">
+                    <span>call</span>
+                    <span>{office.phone}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-between">
               <span className="text-[11px] text-muted-foreground font-medium">
-                {office.established ? `Established: ${office.established}` : 'Active Operations'}
+                {office.isHeadquarters ? 'Global Corporate Headquarters' : 'Operating Presence'}
               </span>
               <Link
                 href="/contact"
@@ -104,3 +110,4 @@ export default function PresencePage() {
     </div>
   );
 }
+
