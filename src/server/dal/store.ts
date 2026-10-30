@@ -15,6 +15,7 @@ import {
   UserRecord,
 } from '@/types';
 import { authorize } from '@/server/policy/authorize';
+import bcrypt from 'bcryptjs';
 import {
   SEED_ORGANISATIONS,
   SEED_USERS,
@@ -803,7 +804,8 @@ export function createUser(
     id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: data.name,
     email: data.email,
-    password: data.password || 'azentio123',
+    // Always hash the password before storing — never store plain text
+    passwordHash: bcrypt.hashSync(data.password || 'azentio123', 12),
     orgId: data.orgId,
     role: data.role,
     platformGrants,
@@ -1049,11 +1051,17 @@ export function authenticateUser(
     }
   }
 
-  // If password provided or password required
+  // Validate password against stored bcrypt hash — never compare plain text
   if (password !== undefined) {
-    if (user.password && user.password !== password) {
+    if (!user.passwordHash) {
       throw new Error(
-        `Invalid password for "${user.email}". Please verify your credentials.`
+        `Access Denied: Account \"${user.email}\" has no password configured. Contact a Portal Administrator.`
+      );
+    }
+    const passwordValid = bcrypt.compareSync(password, user.passwordHash);
+    if (!passwordValid) {
+      throw new Error(
+        `Invalid password for \"${user.email}\". Please verify your credentials.`
       );
     }
   }

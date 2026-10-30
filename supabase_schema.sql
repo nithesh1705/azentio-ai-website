@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS public.users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL DEFAULT 'azentio123',
+    -- SECURITY: passwords are stored as bcrypt hashes (cost=12). Never store plain text.
+    password_hash TEXT NOT NULL,
     org_id TEXT NOT NULL REFERENCES public.organisations(id) ON DELETE CASCADE,
     role TEXT NOT NULL,
     platform_grants TEXT[] NOT NULL DEFAULT '{}',
@@ -137,14 +138,25 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert initial seed users
-INSERT INTO public.users (id, name, email, password, org_id, role, platform_grants, memberships, is_verified_employee)
+-- SECURITY: passwords are bcrypt hashed (cost=12). Plain text passwords are listed
+-- in comments for reference ONLY during initial dev — remove these comments before production.
+INSERT INTO public.users (id, name, email, password_hash, org_id, role, platform_grants, memberships, is_verified_employee)
 VALUES
-    ('usr-employee-nithesh', 'Nithesh M', 'nithesh_m@azentio.com', 'emp123', 'org-azentio', 'employee', '{}', '[]', true),
-    ('usr-mod-pranika', 'Pranika K', 'pranika_k@azentio.com', 'learning123', 'org-azentio', 'learning_moderator', ARRAY['learning_moderator'], '[]', true),
-    ('usr-pub-nishanth', 'Nishanth E', 'nishanth_e@azentio.com', 'content123', 'org-azentio', 'content_publisher', ARRAY['content_publisher'], '[]', true),
-    ('usr-po-lewis', 'Lewis Hamilton', 'lewis_hamilton@azentio.com', 'product123', 'org-azentio', 'product_owner', ARRAY['product_owner'], '[]', true),
-    ('usr-admin-max', 'Max Verstappen', 'max_verstappen@azentio.com', 'admin123', 'org-azentio', 'portal_admin', ARRAY['portal_admin', 'learning_moderator', 'content_publisher', 'product_owner'], '[]', true),
-    ('usr-client-virat', 'Virat Kohli', 'virat_kohli@abcd.in', 'cleint123', 'org-abcd', 'client_member', '{}', '[{"orgId": "org-abcd", "role": "client_member", "status": "active"}]'::jsonb, false),
-    ('usr-client-dhoni', 'MS Dhoni', 'dhoni.ms@xyz.com', 'admin123', 'org-xyz', 'client_admin', '{}', '[{"orgId": "org-xyz", "role": "client_admin", "status": "active"}]'::jsonb, false),
-    ('usr-client-hardik', 'Hardik Pandya', 'hardik.pandya@xyz.com', 'multiorg123', 'org-xyz', 'client_member', '{}', '[{"orgId": "org-xyz", "role": "client_member", "status": "active"}, {"orgId": "org-abcd", "role": "client_member", "status": "active"}]'::jsonb, false)
+    -- plain: emp123
+    ('usr-employee-nithesh', 'Nithesh M', 'nithesh_m@azentio.com', '$2b$12$YjgZc3FyHXUgWY6XEBWDhOWdlb0zJDAvezw3VaFvMAVwWd7Iesjvq', 'org-azentio', 'employee', '{}', '[]', true),
+    -- plain: learning123
+    ('usr-mod-pranika', 'Pranika K', 'pranika_k@azentio.com', '$2b$12$7h3GgC7t1038PuQFsrbb0.9VcaYeg5NkpPqGAPZ4YQpc3SrYlbVP6', 'org-azentio', 'learning_moderator', ARRAY['learning_moderator'], '[]', true),
+    -- plain: content123
+    ('usr-pub-nishanth', 'Nishanth E', 'nishanth_e@azentio.com', '$2b$12$iKg9a6JKQNyEWN95ivwcV.BokVRIqyEKt9l9IycHghSJKfFJIh0X6', 'org-azentio', 'content_publisher', ARRAY['content_publisher'], '[]', true),
+    -- plain: product123
+    ('usr-po-lewis', 'Lewis Hamilton', 'lewis_hamilton@azentio.com', '$2b$12$lRmpIL0xoji2rAMdO67A.eYPPZiYLXB5uqOt5dK7bPYvCi0VZIHa.', 'org-azentio', 'product_owner', ARRAY['product_owner'], '[]', true),
+    -- plain: admin123
+    ('usr-admin-max', 'Max Verstappen', 'max_verstappen@azentio.com', '$2b$12$zYeSW/YRqDbMhafRyioy..npvyhUOuRziIFZheT7WDh55B/Y6oay.', 'org-azentio', 'portal_admin', ARRAY['portal_admin', 'learning_moderator', 'content_publisher', 'product_owner'], '[]', true),
+    -- plain: cleint123
+    ('usr-client-virat', 'Virat Kohli', 'virat_kohli@abcd.in', '$2b$12$Ehgk0TKD/JyNIMdjjjFn3Ocu0h6XZYoATXnbqXwi8q78Bd6mbPxTi', 'org-abcd', 'client_member', '{}', '[{"orgId": "org-abcd", "role": "client_member", "status": "active"}]'::jsonb, false),
+    -- plain: admin123
+    ('usr-client-dhoni', 'MS Dhoni', 'dhoni.ms@xyz.com', '$2b$12$RdQs1p7PP/LfmRlkf3LR9.c4Rya.8NcYVa3ecefCFYpFM96BCi3Dm', 'org-xyz', 'client_admin', '{}', '[{"orgId": "org-xyz", "role": "client_admin", "status": "active"}]'::jsonb, false),
+    -- plain: multiorg123
+    ('usr-client-hardik', 'Hardik Pandya', 'hardik.pandya@xyz.com', '$2b$12$eYDn4dTFwYxWLGU8ZkMLg.BvvZN9V18ogDpnV4UljbcWGZuJx8bgG', 'org-xyz', 'client_member', '{}', '[{"orgId": "org-xyz", "role": "client_member", "status": "active"}, {"orgId": "org-abcd", "role": "client_member", "status": "active"}]'::jsonb, false)
 ON CONFLICT (id) DO NOTHING;
+

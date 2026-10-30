@@ -29,3 +29,4 @@ export const getServerClient = async () => {
   const cookieStore = await cookies();
   return createClient(cookieStore);
 };
+

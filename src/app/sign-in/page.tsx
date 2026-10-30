@@ -120,10 +120,26 @@ export default function SignInPage() {
     }
   };
 
+  // DEV-ONLY: static lookup of plain-text passwords for the quick-fill panel.
+  // Passwords are stored as bcrypt hashes in the DB — this map exists only so
+  // the demo sign-in panel can auto-fill the form without exposing hashes.
+  // REMOVE or gate behind process.env.NODE_ENV === 'development' before production.
+  const DEV_PASSWORD_MAP: Record<string, string> = {
+    'nithesh_m@azentio.com':   'emp123',
+    'pranika_k@azentio.com':   'learning123',
+    'nishanth_e@azentio.com':  'content123',
+    'lewis_hamilton@azentio.com': 'product123',
+    'max_verstappen@azentio.com': 'admin123',
+    'virat_kohli@abcd.in':     'cleint123',
+    'dhoni.ms@xyz.com':        'admin123',
+    'hardik.pandya@xyz.com':   'multiorg123',
+  };
+
   const autoFillCredential = (user: UserRecord, targetOrgId: string) => {
     setSelectedOrgId(targetOrgId);
     setEmail(user.email);
-    setPassword(user.password || '');
+    // Use the dev lookup map — never read passwordHash from the user record
+    setPassword(DEV_PASSWORD_MAP[user.email.toLowerCase()] || '');
     setError(null);
   };
 
@@ -380,7 +396,7 @@ export default function SignInPage() {
                       {u.email}
                     </div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                      pwd: <span className="font-bold">{u.password || 'emp123'}</span>
+                      Click to auto-fill credentials
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -414,7 +430,7 @@ export default function SignInPage() {
                       {u.email}
                     </div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                      pwd: <span className="font-bold">{u.password}</span>
+                      Click to auto-fill credentials
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -448,7 +464,7 @@ export default function SignInPage() {
                       {u.email}
                     </div>
                     <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono">
-                      pwd: <span className="font-bold">{u.password}</span>
+                      Click to auto-fill credentials
                     </div>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />

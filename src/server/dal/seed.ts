@@ -74,7 +74,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-employee-nithesh',
     name: 'Nithesh M',
     email: 'nithesh_m@azentio.com',
-    password: 'emp123',
+    // bcrypt hash of 'emp123' (rounds=12) — never store plain text passwords
+    passwordHash: '$2b$12$YjgZc3FyHXUgWY6XEBWDhOWdlb0zJDAvezw3VaFvMAVwWd7Iesjvq',
     orgId: 'org-azentio',
     role: 'employee',
     platformGrants: [],
@@ -87,7 +88,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-mod-pranika',
     name: 'Pranika K',
     email: 'pranika_k@azentio.com',
-    password: 'learning123',
+    // bcrypt hash of 'learning123' (rounds=12)
+    passwordHash: '$2b$12$7h3GgC7t1038PuQFsrbb0.9VcaYeg5NkpPqGAPZ4YQpc3SrYlbVP6',
     orgId: 'org-azentio',
     role: 'learning_moderator',
     platformGrants: ['learning_moderator'],
@@ -100,7 +102,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-pub-nishanth',
     name: 'Nishanth E',
     email: 'nishanth_e@azentio.com',
-    password: 'content123',
+    // bcrypt hash of 'content123' (rounds=12)
+    passwordHash: '$2b$12$iKg9a6JKQNyEWN95ivwcV.BokVRIqyEKt9l9IycHghSJKfFJIh0X6',
     orgId: 'org-azentio',
     role: 'content_publisher',
     platformGrants: ['content_publisher'],
@@ -113,7 +116,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-po-lewis',
     name: 'Lewis Hamilton',
     email: 'lewis_hamilton@azentio.com',
-    password: 'product123',
+    // bcrypt hash of 'product123' (rounds=12)
+    passwordHash: '$2b$12$lRmpIL0xoji2rAMdO67A.eYPPZiYLXB5uqOt5dK7bPYvCi0VZIHa.',
     orgId: 'org-azentio',
     role: 'product_owner',
     platformGrants: ['product_owner'],
@@ -126,7 +130,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-admin-max',
     name: 'Max Verstappen',
     email: 'max_verstappen@azentio.com',
-    password: 'admin123',
+    // bcrypt hash of 'admin123' (rounds=12)
+    passwordHash: '$2b$12$zYeSW/YRqDbMhafRyioy..npvyhUOuRziIFZheT7WDh55B/Y6oay.',
     orgId: 'org-azentio',
     role: 'portal_admin',
     platformGrants: ['portal_admin', 'learning_moderator', 'content_publisher', 'product_owner'],
@@ -139,7 +144,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-client-virat',
     name: 'Virat Kohli',
     email: 'virat_kohli@abcd.in',
-    password: 'cleint123',
+    // bcrypt hash of 'cleint123' (rounds=12)
+    passwordHash: '$2b$12$Ehgk0TKD/JyNIMdjjjFn3Ocu0h6XZYoATXnbqXwi8q78Bd6mbPxTi',
     orgId: 'org-abcd',
     role: 'client_member',
     platformGrants: [],
@@ -152,7 +158,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-client-dhoni',
     name: 'MS Dhoni',
     email: 'dhoni.ms@xyz.com',
-    password: 'admin123',
+    // bcrypt hash of 'admin123' (rounds=12)
+    passwordHash: '$2b$12$RdQs1p7PP/LfmRlkf3LR9.c4Rya.8NcYVa3ecefCFYpFM96BCi3Dm',
     orgId: 'org-xyz',
     role: 'client_admin',
     platformGrants: [],
@@ -165,7 +172,8 @@ export const SEED_USERS: UserRecord[] = [
     id: 'usr-client-hardik',
     name: 'Hardik Pandya',
     email: 'hardik.pandya@xyz.com',
-    password: 'multiorg123',
+    // bcrypt hash of 'multiorg123' (rounds=12)
+    passwordHash: '$2b$12$eYDn4dTFwYxWLGU8ZkMLg.BvvZN9V18ogDpnV4UljbcWGZuJx8bgG',
     orgId: 'org-xyz',
     role: 'client_member',
     platformGrants: [],

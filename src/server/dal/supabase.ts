@@ -20,7 +20,9 @@ export async function fetchUsersFromSupabase(): Promise<UserRecord[] | null> {
       id: row.id,
       name: row.name,
       email: row.email,
-      password: row.password,
+      // Map the DB column 'password_hash' to the TypeScript field 'passwordHash'
+      // NEVER expose this hash to the client — server-side only
+      passwordHash: row.password_hash,
       orgId: row.org_id,
       role: row.role,
       platformGrants: row.platform_grants || [],
@@ -59,3 +61,4 @@ export async function fetchOrganisationsFromSupabase(): Promise<Organisation[] |
     return null;
   }
 }
+

@@ -40,3 +40,4 @@ export const updateSession = async (request: NextRequest) => {
 
 // Aliased export as createClient matching user's reference
 export const createClient = updateSession;
+

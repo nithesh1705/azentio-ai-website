@@ -229,7 +229,8 @@ export interface UserRecord {
   id: string;
   name: string;
   email: string;
-  password?: string;
+  /** bcrypt hash of the user's password — NEVER store or log plain text passwords */
+  passwordHash?: string;
   orgId: string;
   role: string;
   platformGrants: string[];
