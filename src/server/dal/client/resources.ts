@@ -177,3 +177,4 @@ export function generateIcsContent(resource: ClientResource): string {
     'END:VCALENDAR',
   ].join('\r\n');
 }
+

@@ -93,3 +93,4 @@ describe('Client Saved Searches, Bookmarks & Resources DAL', () => {
     expect(reg.icsContent).toContain('END:VCALENDAR');
   });
 });
+

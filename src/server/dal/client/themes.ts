@@ -35,3 +35,4 @@ export function getClientThemeById(actor: Actor, themeId: string): EnrichedTheme
     supportingObservations,
   };
 }
+

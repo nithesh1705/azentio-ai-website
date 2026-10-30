@@ -155,3 +155,4 @@ export function removeBookmark(actor: Actor, id: string): boolean {
   bookmarks.splice(index, 1);
   return true;
 }
+

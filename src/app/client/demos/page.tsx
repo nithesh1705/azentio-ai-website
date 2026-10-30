@@ -111,11 +111,10 @@ export default function ClientDemosPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                selectedCategory === cat
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${selectedCategory === cat
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'bg-card text-muted-foreground hover:text-foreground border border-border'
-              }`}
+                }`}
             >
               {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </button>

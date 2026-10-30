@@ -41,3 +41,4 @@ describe('Aggregated Themes DAL', () => {
     expect(detail.supportingObservations).toBeDefined();
   });
 });
+

@@ -208,3 +208,4 @@ export function recordTermsAcceptance(
 export function hasAcceptedTerms(actor: Actor, orgId: string): boolean {
   return termsAcceptances.some((t) => t.userId === actor.userId && t.orgId === orgId);
 }
+
