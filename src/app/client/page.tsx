@@ -234,15 +234,14 @@ export default function ClientDashboardPage() {
                         {obs.currentRevision.title}
                       </span>
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          obs.currentState === 'Published'
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${obs.currentState === 'Published'
                             ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : obs.currentState === 'Submitted'
-                            ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20'
-                            : obs.currentState === 'Withdrawn'
-                            ? 'bg-muted text-muted-foreground'
-                            : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                        }`}
+                              ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20'
+                              : obs.currentState === 'Withdrawn'
+                                ? 'bg-muted text-muted-foreground'
+                                : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                          }`}
                       >
                         {obs.currentState}
                       </span>
