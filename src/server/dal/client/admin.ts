@@ -1,7 +1,8 @@
 import crypto from 'crypto';
-import { Actor, UserRecord, ClientInvitation } from '@/types';
+import { Actor, UserRecord, ClientInvitation, Organisation, Offering, EntitlementRequest, Contribution } from '@/types';
 import { store } from '@/server/dal/store';
 import { hashInvitationToken } from './invitations';
+import { transition } from './state_machine';
 
 export interface OrgMemberView {
   userId: string;
@@ -11,6 +12,158 @@ export interface OrgMemberView {
   status: 'active' | 'suspended';
   avatar?: string;
   joinedAt: string;
+}
+
+export interface OrgOverviewData {
+  tenant: Organisation;
+  entitledOfferings: Offering[];
+  unentitledOfferings: Offering[];
+  memberCount: number;
+  adminCount: number;
+  recentRequests: EntitlementRequest[];
+}
+
+export let entitlementRequests: EntitlementRequest[] = [];
+
+/**
+ * Returns organisation profile, active solution entitlements, and request history
+ */
+export function getOrgOverview(actor: Actor): OrgOverviewData {
+  verifyClientAdmin(actor);
+
+  const tenant = store.organisations.find((o) => o.id === actor.activeTenantId);
+  if (!tenant) {
+    throw new Error(`Tenant not found: ${actor.activeTenantId}`);
+  }
+
+  const entitledOfferings = store.offerings.filter((o) =>
+    tenant.entitledOfferings.includes(o.id)
+  );
+
+  const unentitledOfferings = store.offerings.filter(
+    (o) => !tenant.entitledOfferings.includes(o.id)
+  );
+
+  const tenantMembers = store.users.filter((u) =>
+    u.memberships.some((m) => m.orgId === actor.activeTenantId && m.status === 'active')
+  );
+
+  const adminCount = tenantMembers.filter((u) =>
+    u.memberships.some((m) => m.orgId === actor.activeTenantId && m.role === 'client_admin')
+  ).length;
+
+  const recentRequests = entitlementRequests.filter(
+    (r) => r.orgId === actor.activeTenantId
+  );
+
+  return {
+    tenant,
+    entitledOfferings,
+    unentitledOfferings,
+    memberCount: tenantMembers.length,
+    adminCount,
+    recentRequests,
+  };
+}
+
+/**
+ * Request an additional solution entitlement for this tenant
+ */
+export function requestEntitlement(
+  actor: Actor,
+  input: {
+    offeringId: string;
+    businessJustification: string;
+  }
+): EntitlementRequest {
+  verifyClientAdmin(actor);
+
+  const tenant = store.organisations.find((o) => o.id === actor.activeTenantId);
+  if (!tenant) throw new Error('Tenant not found');
+
+  const offering = store.offerings.find((o) => o.id === input.offeringId);
+  if (!offering) throw new Error(`Offering not found: ${input.offeringId}`);
+
+  const req: EntitlementRequest = {
+    id: `req-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    orgId: tenant.id,
+    orgName: tenant.name,
+    offeringId: offering.id,
+    offeringName: offering.name,
+    requestedBy: actor.userId,
+    requestedByName: actor.name,
+    businessJustification: input.businessJustification,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  };
+
+  entitlementRequests.unshift(req);
+
+  store.logAudit(
+    actor,
+    'request_entitlement',
+    'offering',
+    offering.id,
+    `Requested entitlement for ${offering.name} under org ${tenant.id}. Justification: ${input.businessJustification}`
+  );
+
+  return req;
+}
+
+/**
+ * Organisation Oversight: Lists contributions shared across organisation.
+ * SECURITY INVARIANT: NEVER returns private drafts or private-to-author items!
+ */
+export function getOrgObservationsOversight(actor: Actor): Contribution[] {
+  verifyClientAdmin(actor);
+
+  return store.contributions.filter(
+    (c) =>
+      c.orgId === actor.activeTenantId &&
+      c.currentState !== 'Draft' &&
+      (c.visibilityChoice === 'within_organisation' || c.currentState === 'Published')
+  );
+}
+
+/**
+ * Organisation Admin Withdrawal: Allows admin to withdraw an org-level shared observation
+ */
+export function adminWithdrawOrgObservation(
+  actor: Actor,
+  observationId: string,
+  reason: string
+): Contribution {
+  verifyClientAdmin(actor);
+
+  const c = store.contributions.find((item) => item.id === observationId);
+  if (!c || c.orgId !== actor.activeTenantId) {
+    throw new Error('Observation not found or access denied for this workspace.');
+  }
+
+  // Security check: cannot withdraw items that are private to author
+  if (c.visibilityChoice === 'private_to_author' && c.authorId !== actor.userId) {
+    throw new Error('Access denied: cannot administer private-to-author notes.');
+  }
+
+  const result = transition(actor, observationId, { type: 'withdraw' });
+
+  store.logAudit(
+    actor,
+    'admin_withdraw_observation',
+    'contribution',
+    observationId,
+    `Org admin ${actor.userId} withdrew observation "${c.currentRevision.title}". Reason: ${reason}`
+  );
+
+  store.notify(
+    c.authorId,
+    'contribution_status',
+    'Observation Withdrawn by Org Administrator',
+    `Your organisation administrator (${actor.name}) withdrew "${c.currentRevision.title}" from sharing. Reason: ${reason}`,
+    '/client/observations'
+  );
+
+  return result;
 }
 
 function verifyClientAdmin(actor: Actor) {
