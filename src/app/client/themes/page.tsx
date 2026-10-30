@@ -1,29 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
-import { getThemes } from '@/server/dal/store';
+import { getClientThemes, EnrichedTheme } from '@/server/dal/client/themes';
 import {
-  TrendingUp,
-  ShieldCheck,
-  Building2,
-  AlertTriangle,
-  FileText,
-  Clock,
-  ArrowRight,
   Sparkles,
+  Search,
+  Filter,
+  ShieldCheck,
+  AlertTriangle,
+  Layers,
+  ArrowRight,
   Info,
+  Calendar,
+  Building2,
+  Lock,
 } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
 
 export default function ClientThemesPage() {
   const { actor } = usePersona();
+  const [search, setSearch] = useState('');
+  const [filterOffering, setFilterOffering] = useState('all');
 
-  let themes: any[] = [];
+  let themes: EnrichedTheme[] = [];
   try {
-    themes = getThemes(actor);
+    themes = getClientThemes(actor);
   } catch (err: any) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
@@ -34,110 +37,169 @@ export default function ClientThemesPage() {
     );
   }
 
+  const filteredThemes = themes.filter((theme) => {
+    const matchesSearch =
+      theme.title.toLowerCase().includes(search.toLowerCase()) ||
+      theme.description.toLowerCase().includes(search.toLowerCase());
+    const matchesOffering =
+      filterOffering === 'all' || theme.offeringIds.includes(filterOffering);
+    return matchesSearch && matchesOffering;
+  });
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="max-w-3xl mb-10">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs uppercase tracking-widest font-bold text-primary">
-            Aggregated Themes & Synthesis
-          </span>
-          <span className="badge-synthetic text-xs">Synthetic Data</span>
-        </div>
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          Safe Market Trend Themes
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Synthesized consensus topics derived from approved collective observations. Aggregation safeguards strictly suppress small cohorts to protect participant anonymity.
-        </p>
-      </div>
-
-      {/* Safeguard Alert Callout */}
-      <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-xs text-cyan-800 dark:text-cyan-300 mb-8 flex items-start gap-3">
-        <Info className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <span className="font-bold">Aggregation Safeguard Policy (§10.4): </span>
-          <span>
-            Shared statistics are displayed only when supported by &ge; 3 distinct contributing client organisations (Alder Finance, Birchway Bank, Cedar Microlending). Multiple contributions from one organisation count as a single voice.
-          </span>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+              Collective Intelligence
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>k-Anonymity &ge; 3 Orgs Guard</span>
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            Aggregated Learning Themes
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground max-w-2xl">
+            Synthesized operational patterns and cross-organisational benchmarks. To prevent re-identification, themes supported by fewer than 3 distinct institutions have statistical metrics suppressed.
+          </p>
+        </div>
+
+        <Link
+          href="/client/shared"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-xs font-semibold hover:bg-muted transition-all shadow-sm self-start md:self-auto"
+        >
+          <span>Raw De-Identified Feed</span>
+          <ArrowRight className="w-3.5 h-3.5 text-primary" />
+        </Link>
+      </div>
+
+      {/* Mandatory Honesty Notice */}
+      <div className="p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/30 flex items-center gap-3 text-xs text-amber-900 dark:text-amber-200">
+        <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+        <span className="font-mono text-[11px] sm:text-xs">
+          <strong>Honesty Invariant:</strong> Popularity is not market prevalence. Contributed observations reflect edge cases and submitted telemetry, not generalized industry market shares.
+        </span>
+      </div>
+
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search synthesized themes or patterns..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+          <select
+            value={filterOffering}
+            onChange={(e) => setFilterOffering(e.target.value)}
+            className="px-3 py-1.5 text-xs rounded-xl bg-card border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">All Solutions</option>
+            <option value="offering-fai">Financial Analysis Intelligence</option>
+            <option value="offering-aml">AML & Compliance Copilot</option>
+            <option value="offering-cbe">Core Banking Engine</option>
+            <option value="offering-dls">Digital Lending Suite</option>
+          </select>
         </div>
       </div>
 
-      <div className="space-y-6">
-        {themes.map((theme) => (
-          <motion.div
-            key={theme.id}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-8 rounded-3xl glass-panel border border-border glow-card space-y-6"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+      {/* Themes Grid */}
+      {filteredThemes.length === 0 ? (
+        <div className="p-12 text-center rounded-3xl bg-card border border-dashed border-border max-w-md mx-auto space-y-3">
+          <Sparkles className="w-10 h-10 text-muted-foreground mx-auto" />
+          <h3 className="text-sm font-bold text-foreground">No Themes Match Criteria</h3>
+          <p className="text-xs text-muted-foreground">
+            Try adjusting your search query or selecting "All Solutions".
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {filteredThemes.map((theme) => (
+            <motion.div
+              key={theme.id}
+              whileHover={{ y: -3 }}
+              transition={{ duration: 0.2 }}
+              className={`p-6 sm:p-7 rounded-3xl bg-card border flex flex-col justify-between shadow-sm transition-all ${
+                theme.isSuppressed
+                  ? 'border-amber-500/30 ring-1 ring-amber-500/10'
+                  : 'border-border hover:border-primary/40'
+              }`}
+            >
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-                    {theme.offeringNames.join(', ')}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Observation Period: <span className="font-semibold text-foreground">{theme.observationPeriod}</span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  {theme.isSuppressed ? (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                      <Lock className="w-3 h-3" />
+                      <span>Sample Suppressed (&lt;3 Orgs)</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      <span>{theme.distinctOrgCount} Contributing Institutions</span>
+                    </span>
+                  )}
+
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">
+                    Confidence: {theme.confidence}
                   </span>
                 </div>
-                <h2 className="text-2xl font-bold text-foreground">{theme.title}</h2>
-              </div>
 
-              {/* Distinct Organisation Count or Suppressed State */}
-              <div className="shrink-0">
-                {theme.isSuppressed ? (
-                  <div className="px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                    <span className="font-semibold">
-                      Insufficient evidence (&lt; 3 orgs) — Stats Hidden
-                    </span>
-                  </div>
-                ) : (
-                  <div className="px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2 font-bold">
-                    <Building2 className="w-4 h-4 text-emerald-500" />
-                    <span>{theme.distinctOrgCount} Distinct Contributing Institutions</span>
+                <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  {theme.offeringNames.join(' &bull; ')}
+                </div>
+
+                <h2 className="text-lg font-bold text-foreground leading-snug">
+                  {theme.title}
+                </h2>
+
+                <p className="mt-2 text-xs text-muted-foreground line-clamp-3 leading-relaxed">
+                  {theme.description}
+                </p>
+
+                {theme.isSuppressed && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-amber-500/10 text-amber-900 dark:text-amber-200 text-[11px] flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>{theme.suppressionReason}</span>
                   </div>
                 )}
+
+                {/* Evidence Metrics */}
+                <div className="mt-5 pt-4 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-primary" />
+                    <span>Period: {theme.observationPeriod}</span>
+                  </span>
+
+                  <span className="font-semibold text-foreground">
+                    {theme.supportingObservationIds.length} Supporting Findings
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {theme.description}
-            </p>
-
-            {/* Confidence & Limitations */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-1">
-                <span className="font-bold text-foreground">Assessed Confidence:</span>
-                <p className="text-muted-foreground">{theme.confidence}</p>
+              <div className="pt-5 mt-4 border-t border-border flex items-center justify-end">
+                <Link
+                  href={`/client/themes/${theme.id}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm"
+                >
+                  <span>Explore Theme Details</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
-
-              <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-1">
-                <span className="font-bold text-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Limitations & Uncertainty:</span>
-                </span>
-                <p className="text-muted-foreground">{theme.limitations}</p>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4 text-xs">
-              <span className="text-muted-foreground">
-                Last updated {formatDate(theme.lastUpdated)} &bull; Backed by {theme.supportingObservationIds.length} approved evidence items
-              </span>
-
-              <Link
-                href="/client/ideas"
-                className="inline-flex items-center gap-1 text-primary font-semibold hover:underline"
-              >
-                <span>View Linked Product Improvement Idea &rarr;</span>
-              </Link>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
