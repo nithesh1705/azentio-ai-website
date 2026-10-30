@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 
 interface DraggableMarqueeProps {
   children: React.ReactNode;
-  speed?: number; // pixels per second (slowed down, e.g. 25-30)
+  speed?: number; // pixels per second (e.g. 24 for a slow, elegant pace)
   className?: string;
   pauseOnHover?: boolean;
 }
 
 export function DraggableMarquee({
   children,
-  speed = 28,
+  speed = 24,
   className = '',
   pauseOnHover = true,
 }: DraggableMarqueeProps) {
@@ -19,33 +19,56 @@ export function DraggableMarquee({
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const startXRef = useRef(0);
-  const startScrollLeftRef = useRef(0);
-  const hasMovedRef = useRef(false);
+  // Exact sub-pixel scroll accumulator
+  const scrollPosRef = useRef<number>(0);
+  const startXRef = useRef<number>(0);
+  const startScrollLeftRef = useRef<number>(0);
+  const hasMovedRef = useRef<boolean>(false);
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const touchResumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Auto-scrolling loop using requestAnimationFrame
+  // Sync scroll position whenever container scrolls (touch gestures, wheel, drag)
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    // Only sync if user is manually scrolling (dragging, touching, wheel)
+    if (isDragging || isPaused) {
+      scrollPosRef.current = container.scrollLeft;
+    }
+  }, [isDragging, isPaused]);
+
+  // Main Auto-Scroll Animation Frame Loop
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const loop = (currentTime: number) => {
-      if (lastTimeRef.current !== null && !isPaused && !isDragging) {
-        const deltaSeconds = (currentTime - lastTimeRef.current) / 1000;
-        const movement = speed * deltaSeconds;
-        container.scrollLeft += movement;
+    // Initialize scroll position from current DOM state
+    scrollPosRef.current = container.scrollLeft;
 
-        // Infinite loop wrap check (half of total scrollable width)
-        const halfWidth = container.scrollWidth / 2;
-        if (halfWidth > 0) {
-          if (container.scrollLeft >= halfWidth) {
-            container.scrollLeft -= halfWidth;
-          } else if (container.scrollLeft <= 0) {
-            container.scrollLeft += halfWidth;
+    const loop = (currentTime: number) => {
+      if (lastTimeRef.current !== null) {
+        const deltaSeconds = (currentTime - lastTimeRef.current) / 1000;
+
+        // Auto-advance if not paused and not being dragged
+        if (!isPaused && !isDragging) {
+          scrollPosRef.current += speed * deltaSeconds;
+
+          // Seamless loop boundary: half of the total scrollable content
+          const halfWidth = container.scrollWidth / 2;
+          if (halfWidth > 0) {
+            if (scrollPosRef.current >= halfWidth) {
+              scrollPosRef.current -= halfWidth;
+            } else if (scrollPosRef.current < 0) {
+              scrollPosRef.current += halfWidth;
+            }
           }
+
+          container.scrollLeft = scrollPosRef.current;
         }
       }
+
       lastTimeRef.current = currentTime;
       animFrameRef.current = requestAnimationFrame(loop);
     };
@@ -59,14 +82,16 @@ export function DraggableMarquee({
     };
   }, [isPaused, isDragging, speed]);
 
-  // Mouse Drag Events
+  // ── MOUSE DRAG HANDLERS ──────────────────────────────────────────────────
   const handleMouseDown = (e: React.MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
+
     setIsDragging(true);
     hasMovedRef.current = false;
     startXRef.current = e.pageX - container.offsetLeft;
     startScrollLeftRef.current = container.scrollLeft;
+    scrollPosRef.current = container.scrollLeft;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -76,30 +101,40 @@ export function DraggableMarquee({
     e.preventDefault();
 
     const currentX = e.pageX - container.offsetLeft;
-    const walk = (currentX - startXRef.current) * 1.5;
+    const walk = (currentX - startXRef.current) * 1.4;
+
     if (Math.abs(walk) > 4) {
       hasMovedRef.current = true;
     }
-    container.scrollLeft = startScrollLeftRef.current - walk;
 
-    // Wrap around while dragging
+    let targetScroll = startScrollLeftRef.current - walk;
     const halfWidth = container.scrollWidth / 2;
+
     if (halfWidth > 0) {
-      if (container.scrollLeft >= halfWidth) {
-        container.scrollLeft -= halfWidth;
+      if (targetScroll >= halfWidth) {
+        targetScroll -= halfWidth;
         startScrollLeftRef.current -= halfWidth;
-      } else if (container.scrollLeft <= 0) {
-        container.scrollLeft += halfWidth;
+      } else if (targetScroll < 0) {
+        targetScroll += halfWidth;
         startScrollLeftRef.current += halfWidth;
+      }
+    }
+
+    container.scrollLeft = targetScroll;
+    scrollPosRef.current = targetScroll;
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      const container = containerRef.current;
+      if (container) {
+        scrollPosRef.current = container.scrollLeft;
       }
     }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Prevent accidental link activation after dragging
+  // Prevent click on children if mouse was actively dragged
   const handleClickCapture = (e: React.MouseEvent) => {
     if (hasMovedRef.current) {
       e.stopPropagation();
@@ -108,9 +143,34 @@ export function DraggableMarquee({
     }
   };
 
+  // ── TOUCH HANDLERS (Mobile & Touchscreen Laptops) ─────────────────────────
+  const handleTouchStart = () => {
+    if (touchResumeTimeoutRef.current) {
+      clearTimeout(touchResumeTimeoutRef.current);
+      touchResumeTimeoutRef.current = null;
+    }
+    setIsPaused(true);
+    const container = containerRef.current;
+    if (container) {
+      scrollPosRef.current = container.scrollLeft;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    const container = containerRef.current;
+    if (container) {
+      scrollPosRef.current = container.scrollLeft;
+    }
+    // Resume auto-scroll after a short delay so the user can inspect
+    touchResumeTimeoutRef.current = setTimeout(() => {
+      setIsPaused(false);
+    }, 1200);
+  };
+
   return (
     <div
       ref={containerRef}
+      onScroll={handleScroll}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -121,10 +181,8 @@ export function DraggableMarquee({
       onMouseEnter={() => {
         if (pauseOnHover) setIsPaused(true);
       }}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => {
-        setTimeout(() => setIsPaused(false), 1200);
-      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       onClickCapture={handleClickCapture}
       className={`overflow-x-auto select-none no-scrollbar cursor-grab active:cursor-grabbing w-full flex [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] ${className}`}
       style={{
@@ -134,16 +192,14 @@ export function DraggableMarquee({
       }}
     >
       <div className="flex shrink-0 items-center w-max py-2">
-        {/* Set 1 */}
-        <div className="flex shrink-0 items-center gap-4">
-          {children}
-        </div>
-        {/* Spacer between sets to preserve exact gap */}
+        {/* Render 4 duplicates to guarantee complete visual continuity on any screen width */}
+        <div className="flex shrink-0 items-center gap-4">{children}</div>
         <div className="w-4 shrink-0" aria-hidden="true" />
-        {/* Set 2 (Cloned for seamless infinite wrap) */}
-        <div className="flex shrink-0 items-center gap-4" aria-hidden="true">
-          {children}
-        </div>
+        <div className="flex shrink-0 items-center gap-4">{children}</div>
+        <div className="w-4 shrink-0" aria-hidden="true" />
+        <div className="flex shrink-0 items-center gap-4" aria-hidden="true">{children}</div>
+        <div className="w-4 shrink-0" aria-hidden="true" />
+        <div className="flex shrink-0 items-center gap-4" aria-hidden="true">{children}</div>
         <div className="w-4 shrink-0" aria-hidden="true" />
       </div>
     </div>
