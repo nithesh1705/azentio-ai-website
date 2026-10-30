@@ -1,91 +1,158 @@
 'use client';
 
-import React from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { usePersona } from '@/context/PersonaContext';
+import { recordTermsAcceptance } from '@/server/dal/client/invitations';
 import {
-  FileCheck2,
   ShieldCheck,
   CheckCircle2,
-  AlertTriangle,
   Lock,
+  Sparkles,
   ArrowRight,
+  BookOpen,
+  AlertTriangle,
+  Building2,
 } from 'lucide-react';
 
 export default function OnboardingTermsPage() {
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="max-w-2xl mb-10">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs uppercase tracking-widest font-bold text-primary">
-            Azentio Governance Protocol
-          </span>
-          <span className="badge-synthetic text-xs">Policy v1.0-2026</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
-          Terms of Collaboration & Sharing Disclosure
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          Mandatory first-time client journey onboarding. Please review our architectural commitments regarding data isolation, de-identification, and voluntary sharing.
-        </p>
-      </div>
-
-      <div className="p-8 sm:p-10 rounded-3xl glass-panel border border-border space-y-8">
-        {/* Core Principle 4 Alert */}
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-3">
-          <ShieldCheck className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <span className="font-bold text-sm">Fundamental Guarantee: Joining Workspace ≠ Consent to Share or Train</span>
-            <p className="leading-relaxed">
-              Accepting an invitation to your organisation&apos;s workspace provides access to entitled product sandboxes and private drafting. It does not authorize any cross-tenant sharing, public disclosure, or AI training on your data.
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-6 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          <section className="space-y-2">
-            <h2 className="text-base font-bold text-foreground">1. Granular Four-Part Consent Architecture</h2>
-            <p>
-              Each observation submitted carries four distinct, non-conflated permissions recorded with cryptographic timestamps:
-            </p>
-            <ul className="list-disc list-inside space-y-1 pl-2 text-xs">
-              <li><strong className="text-foreground">Consent to Process:</strong> Enables internal storage and tenant-scoped analysis.</li>
-              <li><strong className="text-foreground">Consent to Publish:</strong> Authorizes publication of a reviewed, de-identified shared representation.</li>
-              <li><strong className="text-foreground">Consent to Attribution:</strong> Optional disclosure of your institution&apos;s name (defaults to off/anonymous).</li>
-              <li><strong className="text-foreground">Consent to Model Training:</strong> Independent permission for future federated model programs (default off).</li>
-            </ul>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-base font-bold text-foreground">2. Synchronous Withdrawal SLA (≤ 60 Seconds)</h2>
-            <p>
-              Authors and Client Administrators retain the perpetual right to withdraw published contributions. Withdrawal executes as a single database transaction, immediately and synchronously purging the contribution from search indexes, theme aggregates, and AIRA retrieval.
-            </p>
-          </section>
-
-          <section className="space-y-2">
-            <h2 className="text-base font-bold text-foreground">3. Radical Honesty & Synthetic Labelling</h2>
-            <p>
-              All demonstrator scenarios, simulation metrics, and sandbox recommendations are derived from synthetic data. Outputs are not approved credit, business, or regulatory decisions.
-            </p>
-          </section>
-        </div>
-
-        <div className="pt-6 border-t border-border flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            Conforms strictly to SOURCE_OF_TRUTH.md §6.3
-          </span>
-
-          <Link
-            href="/client"
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-xs hover:bg-primary/90 transition-all shadow-md shadow-emerald-500/20"
-          >
-            <span>Acknowledge & Enter Workspace</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </div>
-    </div>
+    <Suspense fallback={<div className="p-12 text-center text-xs text-muted-foreground">Loading Terms...</div>}>
+      <OnboardingTermsContent />
+    </Suspense>
   );
 }
 
+function OnboardingTermsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const orgId = searchParams.get('orgId') || 'org-abcd';
+  const { actor, availableOrganisations, setActiveTenantId } = usePersona();
+
+  const [hasAgreed, setHasAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const org = availableOrganisations.find((o) => o.id === orgId);
+  const orgName = org?.name || 'Your Client Organisation';
+
+  const handleAcceptTerms = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hasAgreed || !actor) return;
+    setIsSubmitting(true);
+
+    try {
+      recordTermsAcceptance(actor, orgId, '2026.1-v1');
+      setActiveTenantId(orgId);
+      router.push('/client');
+    } catch (err: any) {
+      alert(err.message || 'Failed to record terms acceptance');
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-2xl bg-card border border-border rounded-3xl p-6 sm:p-10 shadow-xl space-y-8"
+      >
+        <div className="text-center space-y-2">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            Workspace Governance & Terms
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
+            Welcome to the <strong className="text-foreground">{orgName}</strong> collaboration hub on azentio.ai.
+          </p>
+        </div>
+
+        {/* Clear Plain-Language Explainer (Mandatory Invariant) */}
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 space-y-3">
+          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+            <Sparkles className="w-4 h-4" />
+            <span>Essential Privacy & Sharing Principles</span>
+          </div>
+
+          <ul className="space-y-2 text-xs text-foreground/90 leading-relaxed">
+            <li className="flex items-start gap-2">
+              <span className="text-primary font-bold">•</span>
+              <span>
+                <strong>Joining is not consent to share or train: </strong>
+                Entering this workspace grants zero automatic rights for Azentio or other institutions to view your data or train models on your activity.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary font-bold">•</span>
+              <span>
+                <strong>Granular per-observation consent: </strong>
+                Every observation you create defaults to <em>"Private to me"</em>. Sharing within your organization or proposing to the learning community requires deliberate, independent action.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-primary font-bold">•</span>
+              <span>
+                <strong>Zero AI Training by default: </strong>
+                Model training consents are strictly decoupled and default to OFF. No training consent is collected on this screen.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Workspace Terms Details */}
+        <div className="rounded-2xl border border-border bg-muted/20 p-5 space-y-3 text-xs max-h-56 overflow-y-auto font-mono text-muted-foreground leading-relaxed">
+          <p className="font-bold text-foreground">Azentio Enterprise Collaboration Terms (v2026.1)</p>
+          <p>
+            1. <strong>Authorized Use</strong>: You agree to use the workspace solely for authorized financial intelligence evaluation, collective learning, and prototype simulation.
+          </p>
+          <p>
+            2. <strong>Restricted Data</strong>: You must NOT upload live production account numbers, client PII, confidential contract terms, or security credentials.
+          </p>
+          <p>
+            3. <strong>Tenant Isolation</strong>: Access is strictly scoped to your authorized organization tier and active entitlements. Attempts to tamper with tenant identifiers are audited and blocked.
+          </p>
+          <p>
+            4. <strong>Audit Logging</strong>: All administrative actions, invitations, and contribution transitions are recorded in an append-only audit trail.
+          </p>
+        </div>
+
+        <form onSubmit={handleAcceptTerms} className="space-y-6">
+          <label className="flex items-start gap-3 cursor-pointer p-4 rounded-2xl border border-border bg-muted/30 hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              required
+              checked={hasAgreed}
+              onChange={(e) => setHasAgreed(e.target.checked)}
+              className="w-4 h-4 rounded border-input text-primary focus:ring-primary/20 mt-0.5"
+            />
+            <span className="text-xs text-foreground">
+              I have read and agree to the <strong>Workspace Terms</strong> for <strong>{orgName}</strong>. I understand that sharing market observations or consenting to model training remains entirely optional and requires separate affirmative action.
+            </span>
+          </label>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <Link
+              href="/choose-workspace"
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Cancel / Switch Workspace
+            </Link>
+
+            <button
+              type="submit"
+              disabled={!hasAgreed || isSubmitting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-md shadow-primary/20 disabled:opacity-50"
+            >
+              <span>{isSubmitting ? 'Entering...' : 'Accept & Proceed to Dashboard'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
