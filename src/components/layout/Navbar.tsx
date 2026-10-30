@@ -31,7 +31,14 @@ export function Navbar() {
   const isSignedIn =
     actor.userId !== 'usr-anonymous' &&
     (actor.isVerifiedEmployee || actor.memberships.length > 0 || actor.platformGrants.length > 0);
-  const isPublic = !isSignedIn;
+
+  // isPortalRoute = user is inside an authenticated workspace area
+  const isPortalRoute =
+    pathname.startsWith('/client') ||
+    pathname.startsWith('/employee') ||
+    pathname.startsWith('/moderation') ||
+    pathname.startsWith('/publisher') ||
+    pathname.startsWith('/admin');
 
   // Determine portal home path based on grants
   const getPortalHome = () => {
@@ -60,8 +67,9 @@ export function Navbar() {
     : 'Client';
 
   // ── SIGNED-IN PORTAL TOPBAR ────────────────────────────────────────────────
-  // When signed in: show only logo + theme toggle + user profile/sign-out
-  if (isSignedIn) {
+  // Only show the minimal topbar when inside an actual portal workspace route.
+  // On public pages (home, about, etc.) show the full public nav instead.
+  if (isSignedIn && isPortalRoute) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-colors shrink-0">
         <div className="h-14 px-4 flex items-center justify-between">
@@ -146,7 +154,9 @@ export function Navbar() {
     );
   }
 
-  // ── PUBLIC NAVBAR ──────────────────────────────────────────────────────────
+  // ── PUBLIC NAVBAR ─────────────────────────────────────────────────────────
+  // Shown on all public pages. If the user is signed in (but browsing the public
+  // site), replace "Sign In" with "Go to Dashboard" so they can jump back.
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md transition-colors shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -221,14 +231,24 @@ export function Navbar() {
             <span>Demo</span>
           </Link>
 
-          {/* Sign In button */}
-          <Link
-            href="/signin"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In</span>
-          </Link>
+          {/* Auth Action: "Go to Dashboard" if already signed in, else "Sign In" */}
+          {isSignedIn ? (
+            <Link
+              href={getPortalHome()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Go to Dashboard</span>
+            </Link>
+          ) : (
+            <Link
+              href="/signin"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </Link>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -268,10 +288,25 @@ export function Navbar() {
             <Link href="/demo-request" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-semibold text-primary hover:bg-accent">Demo</Link>
 
             <div className="pt-2 border-t border-border mt-2">
-              <Link href="/signin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10">
-                <LogIn className="w-4 h-4" />
-                <span>Sign In</span>
-              </Link>
+              {isSignedIn ? (
+                <Link
+                  href={getPortalHome()}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Go to Dashboard</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/signin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Sign In</span>
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

@@ -49,8 +49,9 @@ export function PortalSidebar() {
     (actor.isVerifiedEmployee || actor.memberships.length > 0 || actor.platformGrants.length > 0);
   const isPublic = !isSignedIn;
 
-  // Do not render sidebar on purely public informational pages unless user is authenticated and navigating portal
-  if (!isPortalRoute && isPublic) {
+  // Sidebar is ONLY shown on authenticated portal workspace routes.
+  // Never show it on public pages (home, about, insights, etc.) — even if signed in.
+  if (!isPortalRoute) {
     return null;
   }
 
