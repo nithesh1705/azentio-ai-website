@@ -20,20 +20,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/admin');
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Top Public Navigation Bar */}
+    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+      {/* Top Navigation Bar — always visible */}
       <Navbar />
 
-      {/* Main Layout Area: Optional Sidebar + Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Persistent Sidebar for all signed logins navigating workspaces */}
+      {/* Main Layout Area: Sidebar (fixed height) + Scrollable Content */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* Persistent Sidebar — fixed to remaining height, never scrolls */}
         <PortalSidebar />
 
-        {/* Page Content */}
+        {/* Page Content — only this area scrolls */}
         <main className="flex-1 overflow-y-auto">
           {children}
 
-          {/* Enterprise Footer (only on public or non-portal pages to keep portal workspaces clean and maximize screen space) */}
+          {/* Enterprise Footer — only on public/non-portal pages */}
           {!isPortalArea && (
             <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-20 text-xs text-muted-foreground">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

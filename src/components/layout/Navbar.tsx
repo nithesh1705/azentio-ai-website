@@ -18,14 +18,14 @@ import {
   Briefcase,
   BookOpen,
   ArrowRight,
-  UserCheck,
 } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { actor, currentPersonaKey, setPersona } = usePersona();
+  const { actor, setPersona } = usePersona();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [insightsDropdownOpen, setInsightsDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // isSignedIn = any real authenticated actor (not the anonymous public visitor)
   const isSignedIn =
@@ -33,7 +33,7 @@ export function Navbar() {
     (actor.isVerifiedEmployee || actor.memberships.length > 0 || actor.platformGrants.length > 0);
   const isPublic = !isSignedIn;
 
-  // Determine portal home path if signed in
+  // Determine portal home path based on grants
   const getPortalHome = () => {
     if (actor.platformGrants.includes('portal_admin')) return '/admin/orgs';
     if (actor.platformGrants.includes('product_owner')) return '/employee/ideas';
@@ -44,10 +44,113 @@ export function Navbar() {
     return '/';
   };
 
+  // Human-readable role label
+  const roleLabel = actor.platformGrants.includes('portal_admin')
+    ? 'Portal Admin'
+    : actor.platformGrants.includes('product_owner')
+    ? 'Product Owner'
+    : actor.platformGrants.includes('learning_moderator')
+    ? 'Moderator'
+    : actor.platformGrants.includes('content_publisher')
+    ? 'Publisher'
+    : actor.isVerifiedEmployee
+    ? 'Employee'
+    : actor.memberships.some((m) => m.role === 'client_admin')
+    ? 'Client Admin'
+    : 'Client';
+
+  // ── SIGNED-IN PORTAL TOPBAR ────────────────────────────────────────────────
+  // When signed in: show only logo + theme toggle + user profile/sign-out
+  if (isSignedIn) {
+    return (
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-colors shrink-0">
+        <div className="h-14 px-4 flex items-center justify-between">
+          {/* Logo — links to portal home */}
+          <Link href={getPortalHome()} className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <span className="font-extrabold text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 dark:from-emerald-400 dark:to-cyan-400">
+              azentio.ai
+            </span>
+          </Link>
+
+          {/* Right: theme toggle + user dropdown */}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+
+            {/* User profile button */}
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl border border-border/60 bg-card/80 hover:bg-accent transition-all text-xs font-medium shadow-sm"
+              >
+                {/* Avatar initial */}
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-400 flex items-center justify-center text-white font-bold text-[11px] shrink-0">
+                  {actor.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="hidden sm:flex flex-col items-start leading-tight">
+                  <span className="font-semibold text-foreground truncate max-w-[100px]">{actor.name}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{roleLabel}</span>
+                </div>
+                {/* Online indicator */}
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-56 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50"
+                  >
+                    {/* User info */}
+                    <div className="px-3 py-2.5 border-b border-border/60 mb-1">
+                      <div className="font-semibold text-sm text-foreground">{actor.name}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono mt-0.5 truncate">{actor.email}</div>
+                      <div className="text-[10px] mt-1.5 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold uppercase tracking-wide w-fit">
+                        {roleLabel}
+                      </div>
+                    </div>
+
+                    <Link
+                      href={getPortalHome()}
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium hover:bg-accent text-foreground transition-colors"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                      My Workspace
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        setPersona('public');
+                        window.location.href = '/';
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors mt-1"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  // ── PUBLIC NAVBAR ──────────────────────────────────────────────────────────
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md transition-colors shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* azentio.ai (Logo) */}
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-5 h-5" />
@@ -62,24 +165,13 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Public Desktop Nav: Home, About, Products, Insights, Contact us */}
+        {/* Desktop Nav */}
         <nav className="hidden lg:flex items-center gap-1.5">
-          {/* Home */}
-          <NavLink href="/" active={pathname === '/'}>
-            Home
-          </NavLink>
+          <NavLink href="/" active={pathname === '/'}>Home</NavLink>
+          <NavLink href="/about" active={pathname === '/about'}>About</NavLink>
+          <NavLink href="/offerings" active={pathname.startsWith('/offerings')}>Products</NavLink>
 
-          {/* About */}
-          <NavLink href="/about" active={pathname === '/about'}>
-            About
-          </NavLink>
-
-          {/* Products */}
-          <NavLink href="/offerings" active={pathname.startsWith('/offerings')}>
-            Products
-          </NavLink>
-
-          {/* Insights (Dropdown: Events, Hackathons, Careers, Blogs) */}
+          {/* Insights dropdown */}
           <div
             className="relative"
             onMouseEnter={() => setInsightsDropdownOpen(true)}
@@ -106,51 +198,22 @@ export function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 top-full mt-1 w-64 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50 space-y-1"
                 >
-                  <InsightsDropdownItem
-                    href="/insights/events"
-                    icon={Calendar}
-                    title="Events"
-                    desc="Global AI summits & webinars"
-                    active={pathname === '/insights/events'}
-                  />
-                  <InsightsDropdownItem
-                    href="/insights/hackathons"
-                    icon={FileText}
-                    title="Hackathons"
-                    desc="Agentic AI banking hackathon"
-                    active={pathname === '/insights/hackathons'}
-                  />
-                  <InsightsDropdownItem
-                    href="/careers"
-                    icon={Briefcase}
-                    title="Careers"
-                    desc="Open AI & engineering positions"
-                    active={pathname === '/careers'}
-                  />
-                  <InsightsDropdownItem
-                    href="/insights/blogs"
-                    icon={BookOpen}
-                    title="Blogs"
-                    desc="Research papers & architectures"
-                    active={pathname === '/insights/blogs'}
-                  />
+                  <InsightsDropdownItem href="/insights/events" icon={Calendar} title="Events" desc="Global AI summits & webinars" active={pathname === '/insights/events'} />
+                  <InsightsDropdownItem href="/insights/hackathons" icon={FileText} title="Hackathons" desc="Agentic AI banking hackathon" active={pathname === '/insights/hackathons'} />
+                  <InsightsDropdownItem href="/careers" icon={Briefcase} title="Careers" desc="Open AI & engineering positions" active={pathname === '/careers'} />
+                  <InsightsDropdownItem href="/insights/blogs" icon={BookOpen} title="Blogs" desc="Research papers & architectures" active={pathname === '/insights/blogs'} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Contact us */}
-          <NavLink href="/contact" active={pathname === '/contact'}>
-            Contact us
-          </NavLink>
+          <NavLink href="/contact" active={pathname === '/contact'}>Contact us</NavLink>
         </nav>
 
-        {/* Right Actions: Background Theme switch, Demo button, Sign in button */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2.5">
-          {/* Background Theme Switch */}
           <ThemeToggle />
 
-          {/* Demo Button */}
           <Link
             href="/demo-request"
             className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 hover:scale-105 active:scale-95"
@@ -158,43 +221,16 @@ export function Navbar() {
             <span>Demo</span>
           </Link>
 
-          {/* Sign In Button / User Status */}
-          {isPublic ? (
-            <Link
-              href="/signin"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
-            </Link>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Link
-                href={getPortalHome()}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-card/80 hover:bg-accent text-foreground transition-all shadow-sm"
-                title="Go to Your Authorized Workspace"
-              >
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-semibold truncate max-w-[100px]">{actor.name}</span>
-                <span className="text-[10px] text-muted-foreground uppercase px-1.5 py-0.2 rounded bg-muted/80">
-                  {actor.isVerifiedEmployee ? 'Employee' : 'Client'}
-                </span>
-              </Link>
-              <button
-                onClick={() => {
-                  setPersona('public');
-                  window.location.href = '/';
-                }}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                title="Sign Out to Public View"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Sign Out</span>
-              </button>
-            </div>
-          )}
+          {/* Sign In button */}
+          <Link
+            href="/signin"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In</span>
+          </Link>
 
-          {/* Mobile hamburger button */}
+          {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -205,7 +241,7 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu dropdown */}
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -214,108 +250,28 @@ export function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="lg:hidden border-b border-border bg-background px-4 py-4 space-y-2 text-sm"
           >
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
-            >
-              Home
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
-            >
-              About
-            </Link>
-            <Link
-              href="/offerings"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
-            >
-              Products
-            </Link>
+            <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Home</Link>
+            <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">About</Link>
+            <Link href="/offerings" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Products</Link>
 
-            {/* Insights Accordion / Group */}
             <div className="pt-1 pb-1">
-              <div className="px-3 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">
-                Insights
-              </div>
+              <div className="px-3 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">Insights</div>
               <div className="pl-2 space-y-1 mt-1">
-                <Link
-                  href="/insights/events"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
-                >
-                  <Calendar className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Events</span>
-                </Link>
-                <Link
-                  href="/insights/hackathons"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
-                >
-                  <FileText className="w-3.5 h-3.5 text-cyan-500" />
-                  <span>Hackathons</span>
-                </Link>
-                <Link
-                  href="/careers"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
-                >
-                  <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Careers</span>
-                </Link>
-                <Link
-                  href="/insights/blogs"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
-                >
-                  <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Blogs</span>
-                </Link>
+                <Link href="/insights/events" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Calendar className="w-3.5 h-3.5 text-emerald-500" /><span>Events</span></Link>
+                <Link href="/insights/hackathons" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><FileText className="w-3.5 h-3.5 text-cyan-500" /><span>Hackathons</span></Link>
+                <Link href="/careers" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Briefcase className="w-3.5 h-3.5 text-indigo-500" /><span>Careers</span></Link>
+                <Link href="/insights/blogs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><BookOpen className="w-3.5 h-3.5 text-amber-500" /><span>Blogs</span></Link>
               </div>
             </div>
 
-            <Link
-              href="/contact"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
-            >
-              Contact us
-            </Link>
-
-            <Link
-              href="/demo-request"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg font-semibold text-primary hover:bg-accent"
-            >
-              Demo
-            </Link>
+            <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Contact us</Link>
+            <Link href="/demo-request" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-semibold text-primary hover:bg-accent">Demo</Link>
 
             <div className="pt-2 border-t border-border mt-2">
-              {isPublic ? (
-                <Link
-                  href="/signin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Sign In</span>
-                </Link>
-              ) : (
-                <button
-                  onClick={() => {
-                    setPersona('public');
-                    setMobileMenuOpen(false);
-                    window.location.href = '/';
-                  }}
-                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg font-semibold text-rose-500 hover:bg-rose-500/10"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out ({actor.name})</span>
-                </button>
-              )}
+              <Link href="/signin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10">
+                <LogIn className="w-4 h-4" />
+                <span>Sign In</span>
+              </Link>
             </div>
           </motion.div>
         )}
@@ -324,22 +280,12 @@ export function Navbar() {
   );
 }
 
-function NavLink({
-  href,
-  active,
-  children,
-}: {
-  href: string;
-  active: boolean;
-  children: React.ReactNode;
-}) {
+function NavLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
   return (
     <Link
       href={href}
       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-        active
-          ? 'text-primary bg-primary/10 font-semibold'
-          : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+        active ? 'text-primary bg-primary/10 font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
       }`}
     >
       {children}
@@ -373,7 +319,7 @@ function InsightsDropdownItem({
       <div>
         <div className="text-xs font-bold leading-tight flex items-center gap-1">
           <span>{title}</span>
-          <ArrowRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+          <ArrowRight className="w-2.5 h-2.5 opacity-40" />
         </div>
         <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">{desc}</div>
       </div>

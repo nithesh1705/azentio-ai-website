@@ -75,12 +75,12 @@ export function PortalSidebar() {
 
   return (
     <aside
-      className={`relative z-30 shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-xl transition-all duration-300 flex flex-col justify-between ${
+      className={`relative z-30 shrink-0 border-r border-border/80 bg-card/60 backdrop-blur-xl transition-all duration-300 flex flex-col h-full ${
         collapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Top Section */}
-      <div className="p-3.5 space-y-4">
+      {/* Top Section — brand + org picker (fixed, never scrolls) */}
+      <div className="shrink-0 p-3.5 space-y-4 border-b border-border/40">
         {/* Workspace Brand & Collapse Toggle */}
         <div className="flex items-center justify-between pb-3 border-b border-border/60">
           {!collapsed ? (
@@ -193,8 +193,11 @@ export function PortalSidebar() {
           </div>
         )}
 
-        {/* Navigation Sections */}
-        <div className="space-y-6 pt-1 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+      </div>{/* end top section */}
+
+      {/* Middle — scrollable nav links, fills remaining height */}
+      <div className="flex-1 overflow-y-auto px-3.5 py-2">
+        <div className="space-y-6">
           {/* Client Navigation */}
           {isClient && (
             <div className="space-y-1">
@@ -380,10 +383,10 @@ export function PortalSidebar() {
             </div>
           )}
         </div>
-      </div>
+      </div>{/* end scrollable nav */}
 
-      {/* Bottom User Profile & Sign Out Section */}
-      <div className="p-3 border-t border-border/70 space-y-2 bg-card/40">
+      {/* Bottom — fixed profile + sign out, never scrolls */}
+      <div className="shrink-0 p-3 border-t border-border/70 space-y-2 bg-card/40">
         {!collapsed ? (
           <div className="p-2 rounded-xl bg-card border border-border/60 flex items-center justify-between">
             <div className="flex items-center gap-2 truncate">
