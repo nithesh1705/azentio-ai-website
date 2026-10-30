@@ -112,6 +112,137 @@ CREATE TABLE IF NOT EXISTS public.hackathon_registrations (
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- =========================================================================
+-- PUBLIC ENTERPRISE TABLES (In accordance with azentio_website_research.md)
+-- =========================================================================
+
+-- 8. PRODUCT DOMAINS (Banking, Capital Markets, Risk & Compliance, Insurance, ERP)
+CREATE TABLE IF NOT EXISTS public.product_domains (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    tagline TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon_name TEXT NOT NULL,
+    stats JSONB NOT NULL DEFAULT '[]'::jsonb,
+    highlights TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 9. PRODUCTS (Individual products mapped to their domains)
+CREATE TABLE IF NOT EXISTS public.products (
+    id TEXT PRIMARY KEY,
+    domain_id TEXT NOT NULL REFERENCES public.product_domains(id) ON DELETE CASCADE,
+    slug TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    tagline TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    description TEXT NOT NULL,
+    features TEXT[] NOT NULL DEFAULT '{}',
+    capabilities JSONB NOT NULL DEFAULT '[]'::jsonb,
+    target_audience TEXT[] NOT NULL DEFAULT '{}',
+    deployment_models TEXT[] NOT NULL DEFAULT '{}',
+    compliance_or_certifications TEXT[] NOT NULL DEFAULT '{}',
+    metrics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 10. LEADERSHIP (Executive leadership & Board of directors)
+CREATE TABLE IF NOT EXISTS public.leaders (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    category TEXT NOT NULL CHECK (category IN ('executive', 'board')),
+    bio TEXT NOT NULL,
+    previous_roles TEXT,
+    avatar_url TEXT,
+    linkedin_url TEXT,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 11. PRESENCE (Global offices & innovation hubs - 19 locations)
+CREATE TABLE IF NOT EXISTS public.presence_offices (
+    id TEXT PRIMARY KEY,
+    city TEXT NOT NULL,
+    country TEXT NOT NULL,
+    region TEXT NOT NULL,
+    is_headquarters BOOLEAN NOT NULL DEFAULT false,
+    type TEXT NOT NULL,
+    address TEXT,
+    established TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 12. CUSTOMER CASE STUDIES & TESTIMONIALS
+CREATE TABLE IF NOT EXISTS public.customer_stories (
+    id TEXT PRIMARY KEY,
+    client_name TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    country TEXT NOT NULL,
+    title TEXT NOT NULL,
+    challenge TEXT NOT NULL,
+    solution TEXT NOT NULL,
+    outcomes TEXT[] NOT NULL DEFAULT '{}',
+    quote TEXT,
+    quote_author TEXT,
+    quote_role TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 13. AWARDS & ANALYST RECOGNITIONS
+CREATE TABLE IF NOT EXISTS public.industry_awards (
+    id TEXT PRIMARY KEY,
+    year INT NOT NULL,
+    title TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    category TEXT NOT NULL,
+    product_ref TEXT NOT NULL,
+    badge_text TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 14. BLOGS & RESEARCH ARTICLES
+CREATE TABLE IF NOT EXISTS public.blogs (
+    id TEXT PRIMARY KEY,
+    slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    content TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    author TEXT NOT NULL,
+    published_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    read_time TEXT NOT NULL,
+    tags TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 15. CAREERS & OPEN VACANCIES
+CREATE TABLE IF NOT EXISTS public.career_positions (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    department TEXT NOT NULL,
+    location TEXT NOT NULL,
+    employment_type TEXT NOT NULL,
+    experience_level TEXT NOT NULL,
+    description TEXT NOT NULL,
+    responsibilities TEXT[] NOT NULL DEFAULT '{}',
+    requirements TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 16. CONTACT US ENTRIES
+CREATE TABLE IF NOT EXISTS public.contact_enquiries (
+    id TEXT PRIMARY KEY DEFAULT ('cnt-' || uuid_generate_v4()),
+    full_name TEXT NOT NULL,
+    work_email TEXT NOT NULL,
+    company_name TEXT NOT NULL,
+    country TEXT NOT NULL,
+    interest_domain TEXT NOT NULL,
+    message TEXT NOT NULL,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Enable Row Level Security (RLS) on all tables (Deny by default policy)
 ALTER TABLE public.organisations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -121,12 +252,31 @@ ALTER TABLE public.published_observations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.themes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.demo_enquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hackathon_registrations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.product_domains ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leaders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.presence_offices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.customer_stories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.industry_awards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.blogs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.career_positions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contact_enquiries ENABLE ROW LEVEL SECURITY;
 
 -- Allow read access for application queries
 CREATE POLICY "Public read for organisations" ON public.organisations FOR SELECT USING (true);
 CREATE POLICY "Public read for users" ON public.users FOR SELECT USING (true);
 CREATE POLICY "Public read for published observations" ON public.published_observations FOR SELECT USING (true);
 CREATE POLICY "Public read for themes" ON public.themes FOR SELECT USING (true);
+CREATE POLICY "Public read for product domains" ON public.product_domains FOR SELECT USING (true);
+CREATE POLICY "Public read for products" ON public.products FOR SELECT USING (true);
+CREATE POLICY "Public read for leaders" ON public.leaders FOR SELECT USING (true);
+CREATE POLICY "Public read for presence offices" ON public.presence_offices FOR SELECT USING (true);
+CREATE POLICY "Public read for customer stories" ON public.customer_stories FOR SELECT USING (true);
+CREATE POLICY "Public read for industry awards" ON public.industry_awards FOR SELECT USING (true);
+CREATE POLICY "Public read for blogs" ON public.blogs FOR SELECT USING (true);
+CREATE POLICY "Public read for career positions" ON public.career_positions FOR SELECT USING (true);
+CREATE POLICY "Public insert for contact enquiries" ON public.contact_enquiries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public insert for demo enquiries" ON public.demo_enquiries FOR INSERT WITH CHECK (true);
 
 -- Insert initial seed organisations
 INSERT INTO public.organisations (id, name, slug, domain, tier, entitled_offerings, member_count, synthetic, type)

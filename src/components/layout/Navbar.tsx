@@ -179,7 +179,9 @@ export function Navbar() {
         <nav className="hidden lg:flex items-center gap-1.5">
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
           <NavLink href="/about" active={pathname === '/about'}>About</NavLink>
-          <NavLink href="/offerings" active={pathname.startsWith('/offerings')}>Products</NavLink>
+          <NavLink href="/our-leadership" active={pathname === '/our-leadership'}>Leadership</NavLink>
+          <NavLink href="/our-presence" active={pathname === '/our-presence'}>Presence</NavLink>
+          <NavLink href="/products" active={pathname.startsWith('/products')}>Products</NavLink>
 
           {/* Insights dropdown */}
           <div
@@ -208,16 +210,17 @@ export function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 top-full mt-1 w-64 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50 space-y-1"
                 >
-                  <InsightsDropdownItem href="/insights/events" icon={Calendar} title="Events" desc="Global AI summits & webinars" active={pathname === '/insights/events'} />
-                  <InsightsDropdownItem href="/insights/hackathons" icon={FileText} title="Hackathons" desc="Agentic AI banking hackathon" active={pathname === '/insights/hackathons'} />
-                  <InsightsDropdownItem href="/careers" icon={Briefcase} title="Careers" desc="Open AI & engineering positions" active={pathname === '/careers'} />
-                  <InsightsDropdownItem href="/insights/blogs" icon={BookOpen} title="Blogs" desc="Research papers & architectures" active={pathname === '/insights/blogs'} />
+                  <InsightsDropdownItem href="/insights/case-studies" icon={FileText} title="Case Studies" desc="Client success & transformation stories" active={pathname === '/insights/case-studies'} />
+                  <InsightsDropdownItem href="/insights/blogs" icon={BookOpen} title="Blogs & Research" desc="Technical analysis & whitepapers" active={pathname === '/insights/blogs'} />
+                  <InsightsDropdownItem href="/insights/events" icon={Calendar} title="Events & Summits" desc="Global AI summits & webinars" active={pathname === '/insights/events'} />
+                  <InsightsDropdownItem href="/insights/hackathons" icon={Sparkles} title="AI Hackathons" desc="Global Agentic AI banking competition" active={pathname === '/insights/hackathons'} />
+                  <InsightsDropdownItem href="/careers" icon={Briefcase} title="Careers" desc="Open technology & domain positions" active={pathname === '/careers'} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <NavLink href="/contact" active={pathname === '/contact'}>Contact us</NavLink>
+          <NavLink href="/contact" active={pathname === '/contact' || pathname === '/contact-us'}>Contact us</NavLink>
         </nav>
 
         {/* Right Actions */}
@@ -272,15 +275,18 @@ export function Navbar() {
           >
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Home</Link>
             <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">About</Link>
-            <Link href="/offerings" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Products</Link>
+            <Link href="/our-leadership" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Leadership</Link>
+            <Link href="/our-presence" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Presence</Link>
+            <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Products</Link>
 
             <div className="pt-1 pb-1">
               <div className="px-3 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">Insights</div>
               <div className="pl-2 space-y-1 mt-1">
-                <Link href="/insights/events" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Calendar className="w-3.5 h-3.5 text-emerald-500" /><span>Events</span></Link>
-                <Link href="/insights/hackathons" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><FileText className="w-3.5 h-3.5 text-cyan-500" /><span>Hackathons</span></Link>
+                <Link href="/insights/case-studies" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><FileText className="w-3.5 h-3.5 text-emerald-500" /><span>Case Studies</span></Link>
+                <Link href="/insights/blogs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><BookOpen className="w-3.5 h-3.5 text-amber-500" /><span>Blogs & Research</span></Link>
+                <Link href="/insights/events" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Calendar className="w-3.5 h-3.5 text-cyan-500" /><span>Events</span></Link>
+                <Link href="/insights/hackathons" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Sparkles className="w-3.5 h-3.5 text-teal-500" /><span>Hackathons</span></Link>
                 <Link href="/careers" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Briefcase className="w-3.5 h-3.5 text-indigo-500" /><span>Careers</span></Link>
-                <Link href="/insights/blogs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><BookOpen className="w-3.5 h-3.5 text-amber-500" /><span>Blogs</span></Link>
               </div>
             </div>
 

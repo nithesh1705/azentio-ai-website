@@ -28,6 +28,28 @@ import {
   INITIAL_NOTIFICATIONS,
   INITIAL_AUDIT_LOGS,
 } from './seed';
+import {
+  DOMAINS,
+  PRODUCTS,
+  LEADERS,
+  PRESENCE,
+  TRUSTED_PARTNERS,
+  CASE_STUDIES,
+  AWARDS,
+  BLOGS,
+  CAREERS,
+} from './azentio_data';
+import {
+  ProductDomain,
+  ProductItem,
+  LeaderPerson,
+  PresenceOffice,
+  CustomerStory,
+  IndustryAward,
+  BlogPost,
+  CareerPosition,
+  ContactEnquiry,
+} from '@/types';
 
 // Minimum distinct organisations required to display shared trend statistics
 export const MIN_DISTINCT_ORGS = 3;
@@ -63,6 +85,18 @@ class Store {
   auditEvents: AuditEvent[] = JSON.parse(JSON.stringify(INITIAL_AUDIT_LOGS));
   demoEnquiries: DemoEnquiry[] = [];
   hackathonRegistrations: HackathonRegistration[] = [];
+  contactEnquiries: ContactEnquiry[] = [];
+
+  // Public Enterprise Data
+  domains: ProductDomain[] = [...DOMAINS];
+  products: ProductItem[] = [...PRODUCTS];
+  leaders: LeaderPerson[] = [...LEADERS];
+  presence: PresenceOffice[] = [...PRESENCE];
+  partners = [...TRUSTED_PARTNERS];
+  caseStudies: CustomerStory[] = [...CASE_STUDIES];
+  awards: IndustryAward[] = [...AWARDS];
+  blogs: BlogPost[] = [...BLOGS];
+  careers: CareerPosition[] = [...CAREERS];
 
   // Reset helper for testing
   reset() {
@@ -112,6 +146,71 @@ class Store {
 const store = new Store();
 
 // --- DAL EXPORTS ---
+
+// Public Enterprise Data Accessors
+export function getProductDomains(): ProductDomain[] {
+  return store.domains;
+}
+
+export function getProductDomainBySlug(slug: string): ProductDomain | undefined {
+  return store.domains.find((d) => d.slug === slug || d.id === slug);
+}
+
+export function getAllProducts(): ProductItem[] {
+  return store.products;
+}
+
+export function getProductsByDomain(domainSlugOrId: string): ProductItem[] {
+  const domain = getProductDomainBySlug(domainSlugOrId);
+  const targetId = domain ? domain.id : domainSlugOrId;
+  return store.products.filter((p) => p.domainId === targetId);
+}
+
+export function getProductBySlug(slug: string): ProductItem | undefined {
+  return store.products.find((p) => p.slug === slug || p.id === slug);
+}
+
+export function getLeaders(): LeaderPerson[] {
+  return store.leaders;
+}
+
+export function getPresenceOffices(): PresenceOffice[] {
+  return store.presence;
+}
+
+export function getTrustedPartners() {
+  return store.partners;
+}
+
+export function getCustomerStories(): CustomerStory[] {
+  return store.caseStudies;
+}
+
+export function getIndustryAwards(): IndustryAward[] {
+  return store.awards;
+}
+
+export function getBlogPosts(): BlogPost[] {
+  return store.blogs;
+}
+
+export function getBlogPostBySlug(slug: string): BlogPost | undefined {
+  return store.blogs.find((b) => b.slug === slug || b.id === slug);
+}
+
+export function getCareerPositions(): CareerPosition[] {
+  return store.careers;
+}
+
+export function submitContactEnquiry(enquiry: Omit<ContactEnquiry, 'id' | 'submittedAt'>): ContactEnquiry {
+  const newEnquiry: ContactEnquiry = {
+    ...enquiry,
+    id: `contact-${Date.now()}`,
+    submittedAt: new Date().toISOString(),
+  };
+  store.contactEnquiries.unshift(newEnquiry);
+  return newEnquiry;
+}
 
 export function getPublicOfferings(): Offering[] {
   return store.offerings;

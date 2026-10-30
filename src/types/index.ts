@@ -297,3 +297,114 @@ export interface HackathonRegistration {
   notes: string;
   submittedAt: string;
 }
+
+// ── Public Enterprise Models based on azentio_website_research.md ──
+
+export interface ProductDomain {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  iconName: string;
+  stats: { label: string; value: string }[];
+  highlights: string[];
+}
+
+export interface ProductItem {
+  id: string;
+  domainId: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  summary: string;
+  description: string;
+  features: string[];
+  capabilities: { title: string; description: string }[];
+  targetAudience: string[];
+  deploymentModels: string[];
+  complianceOrCertifications?: string[];
+  metrics?: { label: string; value: string }[];
+}
+
+export interface LeaderPerson {
+  id: string;
+  name: string;
+  role: string;
+  category: 'executive' | 'board';
+  bio: string;
+  previousRoles?: string;
+  avatarUrl?: string;
+  linkedinUrl?: string;
+}
+
+export interface PresenceOffice {
+  id: string;
+  city: string;
+  country: string;
+  region: 'Asia Pacific' | 'Middle East' | 'Africa' | 'South Asia' | 'Americas';
+  isHeadquarters?: boolean;
+  type: 'Corporate HQ' | 'Regional Office' | 'Innovation & Delivery' | 'Support Hub';
+  address?: string;
+  established?: string;
+}
+
+export interface CustomerStory {
+  id: string;
+  clientName: string;
+  domain: string;
+  country: string;
+  title: string;
+  challenge: string;
+  solution: string;
+  outcomes: string[];
+  quote?: string;
+  quoteAuthor?: string;
+  quoteRole?: string;
+}
+
+export interface IndustryAward {
+  id: string;
+  year: number;
+  title: string;
+  organization: string;
+  category: string;
+  productRef: string;
+  badgeText: string;
+}
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  content: string;
+  domain: string;
+  author: string;
+  publishedDate: string;
+  readTime: string;
+  tags: string[];
+}
+
+export interface CareerPosition {
+  id: string;
+  title: string;
+  department: string;
+  location: string;
+  employmentType: 'Full-time' | 'Contract' | 'Hybrid' | 'Remote';
+  experienceLevel: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+}
+
+export interface ContactEnquiry {
+  id: string;
+  fullName: string;
+  workEmail: string;
+  companyName: string;
+  country: string;
+  interestDomain: string;
+  message: string;
+  submittedAt: string;
+}
