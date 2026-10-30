@@ -5,3 +5,4 @@ export async function GET() {
   const users = getAllUsers();
   return NextResponse.json({ users });
 }
+
