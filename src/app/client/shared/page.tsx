@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
 import {
-  getPublishedObservations,
-  getPublicOfferings,
-  transitionContribution,
-} from '@/server/dal/store';
+  getSharedObservations,
+  reportSharedObservation,
+  exportSharedFeedCsv,
+} from '@/server/dal/client/shared';
+import { getPublicOfferings } from '@/server/dal/store';
 import {
   BrainCircuit,
   Search,
@@ -20,8 +21,13 @@ import {
   Building2,
   CheckCircle2,
   AlertCircle,
+  Download,
+  Sparkles,
+  Tag,
+  Globe2,
   X,
   Send,
+  Info,
 } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import { PublishedObservation } from '@/types';
@@ -39,7 +45,7 @@ export default function CollectiveLearningFeedPage() {
 
   let observations: PublishedObservation[] = [];
   try {
-    observations = getPublishedObservations(actor, {
+    observations = getSharedObservations(actor, {
       search,
       offeringId: selectedOffering,
       industry: selectedIndustry,
@@ -59,172 +65,190 @@ export default function CollectiveLearningFeedPage() {
     if (!reportModalObs || !reportReason.trim()) return;
 
     try {
-      // Transition in DAL store: unpublished under review
-      // We look up the source ref internally
+      reportSharedObservation(actor, reportModalObs.id, reportReason.trim());
       setReportSuccess(`Report submitted for review. The observation has been queued for moderator investigation.`);
       setReportModalObs(null);
       setReportReason('');
+      setTimeout(() => setReportSuccess(null), 5000);
     } catch (err: any) {
       alert(err.message || 'Report failed');
     }
   };
 
+  const handleExportCsv = () => {
+    try {
+      const csv = exportSharedFeedCsv(actor, observations);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `azentio-shared-learning-${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err: any) {
+      alert('CSV Export failed: ' + err.message);
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Header */}
-      <div className="max-w-3xl mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs uppercase tracking-widest font-bold text-primary">
-            Collective Learning Hub
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            De-Identified Cross-Client Feed
-          </span>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+              Collective Intelligence Hub
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>De-Identified Federated Read Model</span>
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            Shared Learning Feed
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground max-w-2xl">
+            Cross-tenant operational benchmarks, edge cases, and algorithmic behaviors. Strict de-identification invariants ensure no tenant identifiers or PII ever cross perimeter boundaries.
+          </p>
         </div>
-        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-          Governed Community Observations
-        </h1>
-        <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Search approved market observations contributed by participating financial institutions. All sensitive identifiers, tenant profiles, and unreviewed private notes have been completely stripped.
-        </p>
-      </div>
 
-      {/* Report notification banner */}
-      <AnimatePresence>
-        {reportSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs flex items-center justify-between"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-xs font-semibold hover:bg-muted transition-all shadow-sm"
           >
-            <span>{reportSuccess}</span>
-            <button
-              onClick={() => setReportSuccess(null)}
-              className="font-bold hover:underline ml-4"
-            >
-              Dismiss
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Filter and Search Bar */}
-      <div className="p-4 rounded-2xl glass-panel border border-border mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-          {/* Offering Filter */}
-          <select
-            value={selectedOffering}
-            onChange={(e) => setSelectedOffering(e.target.value)}
-            className="bg-muted/60 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="all">All Offerings</option>
-            {offerings.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Industry Filter */}
-          <select
-            value={selectedIndustry}
-            onChange={(e) => setSelectedIndustry(e.target.value)}
-            className="bg-muted/60 border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="all">All Industries</option>
-            <option value="retail">Retail & Consumer Goods</option>
-            <option value="hospitality">Hospitality & Agriculture</option>
-            <option value="agriculture">Agriculture & Microfinance</option>
-          </select>
+            <Download className="w-4 h-4 text-primary" />
+            <span>Export Feed (CSV)</span>
+          </button>
 
           <Link
             href="/client/themes"
-            className="text-xs font-semibold text-primary hover:underline flex items-center gap-1 ml-2"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
           >
-            <span>View Aggregated Themes &rarr;</span>
+            <Sparkles className="w-4 h-4" />
+            <span>View Aggregated Themes</span>
           </Link>
-        </div>
-
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search de-identified observations..."
-            className="w-full bg-muted/60 pl-9 pr-4 py-2 rounded-xl text-xs text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-          />
         </div>
       </div>
 
-      {/* Observation Feed Cards */}
+      {reportSuccess && (
+        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{reportSuccess}</span>
+        </div>
+      )}
+
+      {/* Filters & Search */}
+      <div className="p-5 rounded-3xl bg-card border border-border flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center shadow-sm">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search verified cross-tenant patterns or findings..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-muted-foreground" />
+            <select
+              value={selectedOffering}
+              onChange={(e) => setSelectedOffering(e.target.value)}
+              className="px-3 py-1.5 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">All Solutions</option>
+              {offerings.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <select
+            value={selectedIndustry}
+            onChange={(e) => setSelectedIndustry(e.target.value)}
+            className="px-3 py-1.5 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">All Industries</option>
+            <option value="Banking">Banking & Markets</option>
+            <option value="Trade">Trade Finance</option>
+            <option value="Lending">Lending & Mortgages</option>
+            <option value="Compliance">Compliance & AML</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Observations Grid */}
       {observations.length === 0 ? (
-        <div className="p-12 text-center rounded-3xl glass-panel border border-dashed border-border max-w-xl mx-auto space-y-3">
+        <div className="p-12 text-center rounded-3xl bg-card border border-dashed border-border max-w-md mx-auto space-y-3">
           <BrainCircuit className="w-10 h-10 text-muted-foreground mx-auto" />
-          <h2 className="text-base font-bold text-foreground">No Approved Observations Found</h2>
+          <h3 className="text-sm font-bold text-foreground">No Published Patterns Match Filter</h3>
           <p className="text-xs text-muted-foreground">
-            No live published observations matched your search or filters.
+            Try adjusting your search query or selecting "All Solutions".
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {observations.map((obs) => (
             <motion.div
               key={obs.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-6 sm:p-8 rounded-3xl glass-panel border border-border glow-card flex flex-col justify-between"
+              whileHover={{ y: -2 }}
+              transition={{ duration: 0.2 }}
+              className="p-6 rounded-3xl bg-card border border-border flex flex-col justify-between hover:border-primary/40 transition-all shadow-sm"
             >
               <div>
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
-                      {obs.offeringName}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-medium">
-                      {obs.industryBand}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded font-medium">
-                      {obs.regionBand}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground">
-                      Period: <span className="font-semibold text-foreground">{obs.periodBand}</span>
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                    {obs.offeringName}
+                  </span>
 
-                  <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[10px] font-mono text-muted-foreground">
                     Confidence: {obs.confidence}
                   </span>
                 </div>
 
-                <h2 className="text-lg sm:text-xl font-bold text-foreground">{obs.title}</h2>
-                <p className="mt-3 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                <h3 className="text-base font-bold text-foreground leading-snug">
+                  {obs.title}
+                </h3>
+
+                <p className="mt-2 text-xs text-muted-foreground line-clamp-4 leading-relaxed">
                   {obs.body}
                 </p>
 
-                <div className="mt-4 p-3 rounded-xl bg-muted/40 border border-border/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <span className="text-muted-foreground">
-                    Evidence Type: <span className="font-semibold text-foreground">{obs.evidenceType}</span>
-                  </span>
-                  <span className="text-muted-foreground">
-                    Attribution: <span className="font-semibold text-foreground">{obs.attributionLabel}</span>
-                  </span>
+                {/* Metadata Pills */}
+                <div className="mt-4 pt-3 border-t border-border/50 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                  <span className="bg-muted px-2 py-0.5 rounded">{obs.industryBand}</span>
+                  <span className="bg-muted px-2 py-0.5 rounded">{obs.regionBand}</span>
+                  <span className="bg-muted px-2 py-0.5 rounded">{obs.periodBand}</span>
+                  <span className="bg-muted px-2 py-0.5 rounded">{obs.evidenceType}</span>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-4 text-xs">
-                <span className="text-[11px] text-muted-foreground">
-                  Published {formatDate(obs.publishedAt)} &bull; De-identified representation
-                </span>
+              {/* Attribution & Actions Footer */}
+              <div className="pt-5 mt-4 border-t border-border flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                  <Globe2 className="w-3.5 h-3.5 text-primary/70" />
+                  <span>
+                    Contributed by:{' '}
+                    <strong className="text-foreground">
+                      {obs.attributionOptIn && obs.attributionLabel
+                        ? obs.attributionLabel
+                        : 'Anonymous BFSI Contributor'}
+                    </strong>
+                  </span>
+                </div>
 
                 <button
                   onClick={() => setReportModalObs(obs)}
-                  className="flex items-center gap-1.5 text-muted-foreground hover:text-destructive text-xs font-medium transition-colors"
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all inline-flex items-center gap-1"
                 >
-                  <Flag className="w-3.5 h-3.5" />
-                  <span>Report Content</span>
+                  <Flag className="w-3 h-3" />
+                  <span>Flag</span>
                 </button>
               </div>
             </motion.div>
@@ -232,74 +256,62 @@ export default function CollectiveLearningFeedPage() {
         </div>
       )}
 
-      {/* Report Modal */}
-      <AnimatePresence>
-        {reportModalObs && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-destructive font-bold text-sm">
-                  <Flag className="w-4 h-4" />
-                  <span>Report Shared Observation</span>
-                </div>
-                <button
-                  onClick={() => setReportModalObs(null)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      {/* Flag / Report Modal */}
+      {reportModalObs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 rounded-3xl bg-card border border-border shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <Flag className="w-4 h-4 text-destructive" />
+                <span>Report Shared Observation</span>
+              </h3>
+              <button
+                onClick={() => setReportModalObs(null)}
+                className="text-muted-foreground hover:text-foreground text-xs"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              Observation: <strong className="text-foreground">{reportModalObs.title}</strong>
+            </div>
+
+            <form onSubmit={handleReport} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground block mb-1">
+                  Reason for Reporting
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="e.g., Potential re-identification concern, misleading operational assertion, or inappropriate phrasing..."
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full p-3 text-xs rounded-xl bg-muted/60 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 leading-relaxed"
+                />
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                Reporting &ldquo;{reportModalObs.title}&rdquo;. You do not need to disclose your identity to report confidential or misleading material. A moderator will triage this observation immediately.
-              </p>
-
-              <form onSubmit={handleReport} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1.5">
-                    Reason for report
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    value={reportReason}
-                    onChange={(e) => setReportReason(e.target.value)}
-                    placeholder="e.g. Contains potential re-identifiable information, misleading dataset, or contract term..."
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-destructive"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setReportModalObs(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90"
-                  >
-                    Submit Report
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setReportModalObs(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 transition-all inline-flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Submit Report</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
