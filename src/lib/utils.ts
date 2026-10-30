@@ -29,3 +29,4 @@ export function formatTime(dateStrOrNum: string | number | Date): string {
     return '';
   }
 }
+

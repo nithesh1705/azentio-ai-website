@@ -60,3 +60,4 @@ This document outlines the phased build of the azentio.ai portal conforming stri
 ## Phase 8: Acceptance Verification & Polish
 - Acceptance gates verification (§17): Policy matrix tests, tenant isolation tests, withdrawal synchronous verification, privacy payload validation, state machine tests.
 - UI motion polish, dark/light theme contrast checks, accessibility and fast-loading asset optimization.
+

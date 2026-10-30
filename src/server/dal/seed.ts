@@ -625,3 +625,4 @@ export const INITIAL_AUDIT_LOGS: AuditEvent[] = [
     details: 'Status transitioned from Proposed to Under review.',
   },
 ];
+

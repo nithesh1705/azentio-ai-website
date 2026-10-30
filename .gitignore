@@ -12,3 +12,4 @@ yarn-error.log*
 .env
 .vercel
 extracted_docx_text.txt
+

@@ -116,3 +116,4 @@ function IdeaStatusBadge({ status }: { status: ImprovementIdea['status'] }) {
     </span>
   );
 }
+

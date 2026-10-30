@@ -32,3 +32,4 @@ export async function GET(
     notice: 'Synthetic media served via authorized proxy route',
   });
 }
+

@@ -205,3 +205,4 @@ export function authorize(
   // Catch-all deny
   return { allow: false, reason: 'Deny by default: no matching policy rule found' };
 }
+

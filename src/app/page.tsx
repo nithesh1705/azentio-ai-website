@@ -268,3 +268,4 @@ function PillarCard({
     </motion.div>
   );
 }
+

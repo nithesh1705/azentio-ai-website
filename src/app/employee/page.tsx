@@ -168,3 +168,4 @@ function ModuleCard({
     </motion.div>
   );
 }
+

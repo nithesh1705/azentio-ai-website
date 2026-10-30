@@ -36,22 +36,22 @@ export interface Actor {
 
 export interface ResourceRef {
   kind:
-    | 'page'
-    | 'offering'
-    | 'media'
-    | 'contribution'
-    | 'published_observation'
-    | 'theme'
-    | 'idea'
-    | 'org'
-    | 'membership'
-    | 'invitation'
-    | 'support_session'
-    | 'experiment'
-    | 'playground'
-    | 'demo_enquiry'
-    | 'hackathon_registration'
-    | 'knowledge';
+  | 'page'
+  | 'offering'
+  | 'media'
+  | 'contribution'
+  | 'published_observation'
+  | 'theme'
+  | 'idea'
+  | 'org'
+  | 'membership'
+  | 'invitation'
+  | 'support_session'
+  | 'experiment'
+  | 'playground'
+  | 'demo_enquiry'
+  | 'hackathon_registration'
+  | 'knowledge';
   id?: string;
   audience: ResourceAudience;
   orgId?: string | null;

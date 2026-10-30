@@ -271,3 +271,4 @@ function StateBadge({ state }: { state: Contribution['currentState'] }) {
     </span>
   );
 }
+
