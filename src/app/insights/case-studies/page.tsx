@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, BookOpen, Quote, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, BookOpen, FileText, Quote, CheckCircle2 } from 'lucide-react';
 import { getCustomerStories } from '@/server/dal/store';
 
 export default function CaseStudiesPage() {
@@ -14,7 +14,7 @@ export default function CaseStudiesPage() {
       {/* Header */}
       <div className="text-center max-w-3xl mx-auto mb-16">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-4">
-          <BookOpen className="w-3.5 h-3.5 text-emerald-500" />
+          <FileText className="w-3.5 h-3.5 text-emerald-500" />
           <span>Customer Success Stories</span>
         </div>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-foreground tracking-tight">

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DraggableMarquee } from '@/components/ui/DraggableMarquee';
 import {
   Sparkles,
   ArrowRight,
@@ -143,21 +144,19 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Infinite CSS marquee animation */}
-        <div className="relative w-full overflow-hidden flex [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-          <div className="flex shrink-0 items-center gap-8 py-2 animate-marquee hover:[animation-play-state:paused]">
-            {partners.concat(partners).concat(partners).map((partner, idx) => (
-              <div
-                key={`partner-${idx}`}
-                className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border/50 bg-background/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-emerald-500/40 transition-colors whitespace-nowrap shadow-xs"
-              >
-                <div className="w-2 h-2 rounded-full bg-emerald-500/70" />
-                <span>{partner.name}</span>
-                <span className="text-[10px] text-muted-foreground/60 font-mono">({partner.country})</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Draggable & Touch-enabled Smooth Auto-Scroll Ticker */}
+        <DraggableMarquee speed={22} className="py-2">
+          {partners.map((partner, idx) => (
+            <div
+              key={`partner-${idx}`}
+              className="flex items-center gap-2.5 px-4 py-2 rounded-xl border border-border/50 bg-background/60 text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-emerald-500/40 transition-colors whitespace-nowrap shadow-xs"
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-500/70" />
+              <span>{partner.name}</span>
+              <span className="text-[10px] text-muted-foreground/60 font-mono">({partner.country})</span>
+            </div>
+          ))}
+        </DraggableMarquee>
       </section>
 
       {/* ── 3. FIVE DOMAINS: AUTO + MANUAL SCROLLER ──────────────────────── */}

@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { getPresenceOffices, getLeaders } from '@/server/dal/store';
+import { DraggableMarquee } from '@/components/ui/DraggableMarquee';
 
 export default function AboutPage() {
   const offices = getPresenceOffices();
@@ -34,14 +35,14 @@ export default function AboutPage() {
 
       {/* Hero Section */}
       <section className="relative pt-20 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold mb-4"
         >
           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
           <span>Singapore HQ • Established 2020 • Apax-Backed</span>
-        </motion.div>
+        </motion.div> */}
 
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
@@ -183,46 +184,44 @@ export default function AboutPage() {
               Global Operating Footprint
             </h2>
             <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
-              19 Locations Worldwide
+              {offices.length} Locations Worldwide
             </h3>
             <p className="text-muted-foreground text-xs mt-1">
-              Hover anywhere below to pause scrolling and view location details.
+              Click & drag or swipe to explore • Pauses on hover
             </p>
           </div>
           <Link
             href="/our-presence"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm"
           >
-            <span>Explore All 19 Presence Hubs</span>
+            <span>Explore All {offices.length} Presence Hubs</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {/* Continuous auto-scroller with hover-pause */}
-        <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)] py-4">
-          <div className="flex shrink-0 items-center gap-4 py-2 animate-marquee-slow hover:[animation-play-state:paused]">
-            {offices.concat(offices).concat(offices).map((office, idx) => (
-              <div
-                key={`office-${idx}`}
-                className="w-64 p-4 rounded-2xl border border-border bg-card shadow-sm hover:border-emerald-500/50 hover:shadow-md transition-all shrink-0"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-500" />
-                    <span>{office.city}</span>
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-muted font-mono uppercase text-muted-foreground">
-                    {office.region}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">{office.country}</div>
-                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-2">
-                  {office.type}
-                </div>
+        {/* Draggable & Touch-enabled Presence Scroller */}
+        <DraggableMarquee speed={22} className="py-2">
+          {offices.map((office, idx) => (
+            <div
+              key={`office-${idx}`}
+              className="w-64 p-4 rounded-2xl border border-border bg-card shadow-sm hover:border-emerald-500/50 hover:shadow-md transition-all shrink-0 cursor-pointer select-none"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{office.city}</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-muted font-mono uppercase text-muted-foreground">
+                  {office.region}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
+              <div className="text-xs text-muted-foreground font-medium">{office.country}</div>
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-2">
+                {office.type}
+              </div>
+            </div>
+          ))}
+        </DraggableMarquee>
       </section>
 
       {/* ── SECTION: EXECUTIVE LEADERSHIP OVERVIEW ────────────────────────── */}
