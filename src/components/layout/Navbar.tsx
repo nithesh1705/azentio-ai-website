@@ -8,49 +8,42 @@ import { usePersona } from '@/context/PersonaContext';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import {
   Sparkles,
-  Bell,
-  Menu,
-  X,
   ChevronDown,
-  Building,
-  Terminal,
-  ShieldCheck,
-  Compass,
-  FileText,
-  Radio,
-  BookOpen,
-  Layers,
-  Settings,
-  Users,
   LogIn,
   LogOut,
+  Menu,
+  X,
+  Calendar,
+  FileText,
+  Briefcase,
+  BookOpen,
+  ArrowRight,
+  UserCheck,
 } from 'lucide-react';
-import { getNotifications } from '@/server/dal/store';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { actor, currentPersonaKey, setPersona, activeTenant } = usePersona();
+  const { actor, currentPersonaKey, setPersona } = usePersona();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-
-  // Retrieve in-app notifications for active persona
-  const notifications = getNotifications(actor);
-  const unreadCount = notifications.filter((n) => n.state === 'stored').length;
+  const [insightsDropdownOpen, setInsightsDropdownOpen] = useState(false);
 
   const isPublic = currentPersonaKey === 'public' && actor.userId === 'usr-anonymous';
-  const isEmployee = actor.isVerifiedEmployee;
-  const isClient = actor.memberships.some((m) => m.status === 'active');
-  const isModerator = actor.platformGrants.includes('learning_moderator');
-  const isPublisher = actor.platformGrants.includes('content_publisher');
-  const isAdmin = actor.platformGrants.includes('portal_admin');
-  const isClientAdmin = actor.memberships.some(
-    (m) => m.orgId === actor.activeTenantId && m.role === 'client_admin'
-  );
+
+  // Determine portal home path if signed in
+  const getPortalHome = () => {
+    if (actor.platformGrants.includes('portal_admin')) return '/admin/orgs';
+    if (actor.platformGrants.includes('product_owner')) return '/employee/ideas';
+    if (actor.platformGrants.includes('learning_moderator')) return '/moderation/queue';
+    if (actor.platformGrants.includes('content_publisher')) return '/publisher/content';
+    if (actor.isVerifiedEmployee) return '/employee';
+    if (actor.memberships.length > 0) return '/client';
+    return '/';
+  };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Brand Logo */}
+        {/* azentio.ai (Logo) */}
         <Link href="/" className="flex items-center gap-2.5 group">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
             <Sparkles className="w-5 h-5" />
@@ -65,181 +58,106 @@ export function Navbar() {
           </div>
         </Link>
 
-        {/* Dynamic Desktop Nav Links */}
-        <nav className="hidden lg:flex items-center gap-1">
-          {/* Public links */}
+        {/* Public Desktop Nav: Home, About, Products, Insights, Contact us */}
+        <nav className="hidden lg:flex items-center gap-1.5">
+          {/* Home */}
           <NavLink href="/" active={pathname === '/'}>
             Home
           </NavLink>
+
+          {/* About */}
+          <NavLink href="/about" active={pathname === '/about'}>
+            About
+          </NavLink>
+
+          {/* Products */}
           <NavLink href="/offerings" active={pathname.startsWith('/offerings')}>
-            Offerings
-          </NavLink>
-          <NavLink href="/solutions" active={pathname === '/solutions'}>
-            Solutions
-          </NavLink>
-          <NavLink href="/insights" active={pathname === '/insights'}>
-            Public Insights
+            Products
           </NavLink>
 
-          {/* Client Experience */}
-          {isClient && (
-            <div className="relative group">
-              <button
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith('/client')
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
-              >
-                <Building className="w-4 h-4 text-emerald-500" />
-                <span>Client Hub</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-              </button>
-              <div className="absolute left-0 top-full mt-1 w-56 rounded-xl bg-card border border-border shadow-xl p-2 hidden group-hover:block transition-all">
-                <DropdownItem href="/client" label="Workspace Dashboard" active={pathname === '/client'} />
-                <DropdownItem href="/client/demos" label="Entitled Sandboxes" active={pathname === '/client/demos'} />
-                <DropdownItem href="/client/observations" label="My Observations" active={pathname === '/client/observations'} />
-                <DropdownItem href="/client/observations/new" label="Submit Observation" active={pathname === '/client/observations/new'} />
-                <DropdownItem href="/client/shared" label="Collective Learning Feed" active={pathname === '/client/shared'} />
-                <DropdownItem href="/client/themes" label="Safe Trend Themes" active={pathname === '/client/themes'} />
-                <DropdownItem href="/client/ideas" label="Improvement Status" active={pathname === '/client/ideas'} />
-                {isClientAdmin && (
-                  <DropdownItem href="/client/admin/members" label="Manage Members" active={pathname === '/client/admin/members'} />
-                )}
-              </div>
-            </div>
-          )}
+          {/* Insights (Dropdown: Events, Hackathons, Careers, Blogs) */}
+          <div
+            className="relative"
+            onMouseEnter={() => setInsightsDropdownOpen(true)}
+            onMouseLeave={() => setInsightsDropdownOpen(false)}
+          >
+            <Link
+              href="/insights"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                pathname.startsWith('/insights') || pathname === '/careers'
+                  ? 'text-primary bg-primary/10 font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              <span>Insights</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${insightsDropdownOpen ? 'rotate-180' : ''}`} />
+            </Link>
 
-          {/* Employee Experience */}
-          {isEmployee && (
-            <div className="relative group">
-              <button
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  pathname.startsWith('/employee')
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
-              >
-                <Terminal className="w-4 h-4 text-indigo-500" />
-                <span>Employee Portal</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-              </button>
-              <div className="absolute left-0 top-full mt-1 w-52 rounded-xl bg-card border border-border shadow-xl p-2 hidden group-hover:block transition-all">
-                <DropdownItem href="/employee" label="Internal Dashboard" active={pathname === '/employee'} />
-                <DropdownItem href="/employee/playground" label="Guided Playground" active={pathname === '/employee/playground'} />
-                <DropdownItem href="/employee/live" label="Live Broadcasts" active={pathname === '/employee/live'} />
-                <DropdownItem href="/employee/ideas" label="Product Owner Ideas" active={pathname === '/employee/ideas'} />
-                <DropdownItem href="/employee/knowledge" label="Knowledge Library" active={pathname === '/employee/knowledge'} />
-                <DropdownItem href="/employee/experiments" label="Experiments & Lab" active={pathname === '/employee/experiments'} />
-              </div>
-            </div>
-          )}
+            <AnimatePresence>
+              {insightsDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-1 w-64 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50 space-y-1"
+                >
+                  <InsightsDropdownItem
+                    href="/insights/events"
+                    icon={Calendar}
+                    title="Events"
+                    desc="Global AI summits & webinars"
+                    active={pathname === '/insights/events'}
+                  />
+                  <InsightsDropdownItem
+                    href="/insights/hackathons"
+                    icon={FileText}
+                    title="Hackathons"
+                    desc="Agentic AI banking hackathon"
+                    active={pathname === '/insights/hackathons'}
+                  />
+                  <InsightsDropdownItem
+                    href="/careers"
+                    icon={Briefcase}
+                    title="Careers"
+                    desc="Open AI & engineering positions"
+                    active={pathname === '/careers'}
+                  />
+                  <InsightsDropdownItem
+                    href="/insights/blogs"
+                    icon={BookOpen}
+                    title="Blogs"
+                    desc="Research papers & architectures"
+                    active={pathname === '/insights/blogs'}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-          {/* Moderation Queue */}
-          {isModerator && (
-            <NavLink href="/moderation/queue" active={pathname.startsWith('/moderation')}>
-              <ShieldCheck className="w-4 h-4 text-amber-500 inline mr-1" />
-              Moderation
-            </NavLink>
-          )}
-
-          {/* Publisher */}
-          {isPublisher && (
-            <NavLink href="/publisher/content" active={pathname.startsWith('/publisher')}>
-              Publisher
-            </NavLink>
-          )}
-
-          {/* Admin */}
-          {isAdmin && (
-            <NavLink href="/admin/orgs" active={pathname.startsWith('/admin')}>
-              <Settings className="w-4 h-4 inline mr-1 text-rose-500" />
-              Admin
-            </NavLink>
-          )}
-
-          <NavLink href="/events/hackathon" active={pathname === '/events/hackathon'}>
-            Hackathon
+          {/* Contact us */}
+          <NavLink href="/contact" active={pathname === '/contact'}>
+            Contact us
           </NavLink>
         </nav>
 
-        {/* Right side: Actions, Theme, Notifications */}
+        {/* Right Actions: Background Theme switch, Demo button, Sign in button */}
         <div className="flex items-center gap-2.5">
-          {/* Notifications Popover */}
-          {!isPublic && (
-            <div className="relative">
-              <button
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                aria-label="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                )}
-              </button>
-
-              <AnimatePresence>
-                {notificationsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 top-full mt-2 w-80 rounded-2xl bg-card border border-border shadow-2xl p-4 z-50"
-                  >
-                    <div className="flex items-center justify-between pb-3 border-b border-border">
-                      <div className="flex items-center gap-1.5">
-                        <Bell className="w-4 h-4 text-primary" />
-                        <span className="font-semibold text-sm">Notifications</span>
-                      </div>
-                      <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                        Outbox Pattern
-                      </span>
-                    </div>
-
-                    <div className="mt-3 space-y-2.5 max-h-72 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">
-                          No notifications yet.
-                        </p>
-                      ) : (
-                        notifications.map((n) => (
-                          <div
-                            key={n.id}
-                            className="p-2.5 rounded-xl bg-muted/50 border border-border/60 hover:bg-muted text-xs space-y-1 transition-colors"
-                          >
-                            <div className="font-semibold text-foreground flex items-center justify-between">
-                              <span>{n.title}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">
-                                {n.deliveredChannelState}
-                              </span>
-                            </div>
-                            <p className="text-muted-foreground line-clamp-2">{n.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-
-          {/* Theme Toggle */}
+          {/* Background Theme Switch */}
           <ThemeToggle />
 
-          {/* Demo Request Button */}
+          {/* Demo Button */}
           <Link
             href="/demo-request"
-            className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 hover:scale-105 active:scale-95"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 hover:scale-105 active:scale-95"
           >
-            <span>Request Demo</span>
+            <span>Demo</span>
           </Link>
 
-          {/* Sign In / Active Session Action */}
+          {/* Sign In Button / User Status */}
           {isPublic ? (
             <Link
-              href="/sign-in"
+              href="/signin"
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm shadow-emerald-500/10 hover:scale-105 active:scale-95"
             >
               <LogIn className="w-3.5 h-3.5" />
@@ -248,13 +166,13 @@ export function Navbar() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/sign-in"
+                href={getPortalHome()}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-card/80 hover:bg-accent text-foreground transition-all shadow-sm"
-                title="Switch Account or View Credentials"
+                title="Go to Your Authorized Workspace"
               >
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-semibold truncate max-w-[110px]">{actor.name}</span>
-                <span className="text-[10px] text-muted-foreground uppercase px-1 py-0.5 rounded bg-muted/80">
+                <span className="font-semibold truncate max-w-[100px]">{actor.name}</span>
+                <span className="text-[10px] text-muted-foreground uppercase px-1.5 py-0.2 rounded bg-muted/80">
                   {actor.isVerifiedEmployee ? 'Employee' : 'Client'}
                 </span>
               </Link>
@@ -264,7 +182,7 @@ export function Navbar() {
                   window.location.href = '/';
                 }}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-                title="Sign Out"
+                title="Sign Out to Public View"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Sign Out</span>
@@ -276,6 +194,7 @@ export function Navbar() {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent"
+            aria-label="Toggle navigation menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -289,76 +208,93 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-b border-border bg-background px-4 py-4 space-y-2"
+            className="lg:hidden border-b border-border bg-background px-4 py-4 space-y-2 text-sm"
           >
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent"
+              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
             >
               Home
             </Link>
             <Link
+              href="/about"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
+            >
+              About
+            </Link>
+            <Link
               href="/offerings"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent"
+              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
             >
-              Offerings
+              Products
             </Link>
+
+            {/* Insights Accordion / Group */}
+            <div className="pt-1 pb-1">
+              <div className="px-3 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                Insights
+              </div>
+              <div className="pl-2 space-y-1 mt-1">
+                <Link
+                  href="/insights/events"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Events</span>
+                </Link>
+                <Link
+                  href="/insights/hackathons"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
+                >
+                  <FileText className="w-3.5 h-3.5 text-cyan-500" />
+                  <span>Hackathons</span>
+                </Link>
+                <Link
+                  href="/careers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
+                >
+                  <Briefcase className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Careers</span>
+                </Link>
+                <Link
+                  href="/insights/blogs"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Blogs</span>
+                </Link>
+              </div>
+            </div>
+
             <Link
-              href="/solutions"
+              href="/contact"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent"
+              className="block px-3 py-2 rounded-lg font-medium hover:bg-accent"
             >
-              Solutions
+              Contact us
             </Link>
-            <Link
-              href="/insights"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent"
-            >
-              Public Insights
-            </Link>
-            {isClient && (
-              <Link
-                href="/client"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm font-medium text-emerald-500 hover:bg-accent"
-              >
-                Client Workspace ({activeTenant?.name})
-              </Link>
-            )}
-            {isEmployee && (
-              <Link
-                href="/employee"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm font-medium text-indigo-500 hover:bg-accent"
-              >
-                Employee Portal
-              </Link>
-            )}
-            {isModerator && (
-              <Link
-                href="/moderation/queue"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-sm font-medium text-amber-500 hover:bg-accent"
-              >
-                Moderation Queue
-              </Link>
-            )}
+
             <Link
               href="/demo-request"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-accent"
+              className="block px-3 py-2 rounded-lg font-semibold text-primary hover:bg-accent"
             >
-              Request Demo
+              Demo
             </Link>
+
             <div className="pt-2 border-t border-border mt-2">
               {isPublic ? (
                 <Link
-                  href="/sign-in"
+                  href="/signin"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-emerald-500 hover:bg-emerald-500/10"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-emerald-500 hover:bg-emerald-500/10"
                 >
                   <LogIn className="w-4 h-4" />
                   <span>Sign In</span>
@@ -370,7 +306,7 @@ export function Navbar() {
                     setMobileMenuOpen(false);
                     window.location.href = '/';
                   }}
-                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-rose-500 hover:bg-rose-500/10"
+                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg font-semibold text-rose-500 hover:bg-rose-500/10"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sign Out ({actor.name})</span>
@@ -407,26 +343,36 @@ function NavLink({
   );
 }
 
-function DropdownItem({
+function InsightsDropdownItem({
   href,
-  label,
+  icon: Icon,
+  title,
+  desc,
   active,
 }: {
   href: string;
-  label: string;
+  icon: any;
+  title: string;
+  desc: string;
   active: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`block px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-        active
-          ? 'bg-primary/10 text-primary font-semibold'
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+      className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
+        active ? 'bg-primary/10 text-primary' : 'hover:bg-accent/80 text-foreground'
       }`}
     >
-      {label}
+      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+        <Icon className="w-4 h-4" />
+      </div>
+      <div>
+        <div className="text-xs font-bold leading-tight flex items-center gap-1">
+          <span>{title}</span>
+          <ArrowRight className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+        </div>
+        <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">{desc}</div>
+      </div>
     </Link>
   );
 }
-

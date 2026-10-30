@@ -46,8 +46,16 @@ export default function ModerationQueuePage() {
         <ShieldCheck className="w-12 h-12 text-destructive mx-auto" />
         <h1 className="text-2xl font-bold text-foreground">Access Restricted</h1>
         <p className="text-sm text-muted-foreground">
-          Moderation queue requires explicit &ldquo;learning_moderator&rdquo; platform grant. Use the top persona switcher to select Moderator (Liam Gallagher).
+          Moderation queue requires explicit &ldquo;learning_moderator&rdquo; platform grant. Please sign in with your moderator credentials (e.g. Pranika K: pranika_k@azentio.com).
         </p>
+        <div className="pt-2">
+          <Link
+            href="/signin"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+          >
+            <span>Sign In as Moderator</span>
+          </Link>
+        </div>
       </div>
     );
   }

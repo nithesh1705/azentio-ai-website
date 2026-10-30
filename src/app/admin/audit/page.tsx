@@ -25,8 +25,16 @@ export default function AdminAuditPage() {
         <ShieldCheck className="w-12 h-12 text-destructive mx-auto" />
         <h1 className="text-2xl font-bold text-foreground">Access Restricted</h1>
         <p className="text-sm text-muted-foreground">
-          Audit logs are accessible strictly to Portal Administrators.
+          Audit logs are accessible strictly to Portal Administrators (e.g. Max Verstappen: max_verstappen@azentio.com).
         </p>
+        <div className="pt-2">
+          <Link
+            href="/signin"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/20"
+          >
+            <span>Sign In as Portal Admin</span>
+          </Link>
+        </div>
       </div>
     );
   }
