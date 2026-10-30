@@ -12,10 +12,12 @@ import {
   Offering,
   DemoEnquiry,
   HackathonRegistration,
+  UserRecord,
 } from '@/types';
 import { authorize } from '@/server/policy/authorize';
 import {
   SEED_ORGANISATIONS,
+  SEED_USERS,
   SEED_OFFERINGS,
   SEED_PERSONAS,
   INITIAL_CONTRIBUTIONS,
@@ -50,6 +52,7 @@ export function scanSensitivity(text: string): string[] {
 // In-Memory Transactional Store
 class Store {
   organisations: Organisation[] = [...SEED_ORGANISATIONS];
+  users: UserRecord[] = JSON.parse(JSON.stringify(SEED_USERS));
   offerings: Offering[] = [...SEED_OFFERINGS];
   contributions: Contribution[] = JSON.parse(JSON.stringify(INITIAL_CONTRIBUTIONS));
   publishedObservations: PublishedObservation[] = JSON.parse(JSON.stringify(INITIAL_PUBLISHED_OBSERVATIONS));
@@ -63,6 +66,7 @@ class Store {
   // Reset helper for testing
   reset() {
     this.organisations = [...SEED_ORGANISATIONS];
+    this.users = JSON.parse(JSON.stringify(SEED_USERS));
     this.offerings = [...SEED_OFFERINGS];
     this.contributions = JSON.parse(JSON.stringify(INITIAL_CONTRIBUTIONS));
     this.publishedObservations = JSON.parse(JSON.stringify(INITIAL_PUBLISHED_OBSERVATIONS));
@@ -730,6 +734,329 @@ export function submitHackathonRegistration(reg: Omit<HackathonRegistration, 'id
   };
   store.hackathonRegistrations.unshift(newReg);
   return newReg;
+}
+
+// --- USER & ORGANISATION ADMINISTRATION (PORTAL ADMIN CRUD) ---
+
+export function getAllUsers(): UserRecord[] {
+  return store.users;
+}
+
+export function getUsersByOrg(orgId: string): UserRecord[] {
+  return store.users.filter((u) => u.orgId === orgId);
+}
+
+export function createUser(
+  actor: Actor,
+  data: {
+    name: string;
+    email: string;
+    orgId: string;
+    role: string;
+  }
+): UserRecord {
+  const decision = authorize(actor, 'manage_org', {
+    kind: 'org',
+    audience: 'public',
+  });
+  if (!decision.allow) {
+    throw new Error(`Unauthorized: ${decision.reason}`);
+  }
+
+  const existing = store.users.find(
+    (u) => u.email.toLowerCase() === data.email.toLowerCase()
+  );
+  if (existing) {
+    throw new Error(`User with email "${data.email}" already exists.`);
+  }
+
+  const isPlatformOrg = data.orgId === 'org-azentio' || data.email.endsWith('@azentio.com');
+
+  if (isPlatformOrg && (data.role === 'client_member' || data.role === 'client_admin')) {
+    throw new Error('Azentio organization only accepts platform roles (employee, learning_moderator, content_publisher, product_owner, portal_admin).');
+  }
+  if (!isPlatformOrg && ['employee', 'learning_moderator', 'content_publisher', 'product_owner', 'portal_admin'].includes(data.role)) {
+    throw new Error('Client organizations only accept client roles (client_member, client_admin).');
+  }
+
+  const platformGrants: string[] = [];
+  if (isPlatformOrg) {
+    if (data.role === 'portal_admin') {
+      platformGrants.push('portal_admin', 'learning_moderator', 'content_publisher', 'product_owner');
+    } else if (['learning_moderator', 'content_publisher', 'product_owner'].includes(data.role)) {
+      platformGrants.push(data.role);
+    }
+  }
+
+  const memberships = isPlatformOrg
+    ? []
+    : [
+        {
+          orgId: data.orgId,
+          role: (data.role === 'client_admin' ? 'client_admin' : 'client_member') as 'client_admin' | 'client_member',
+          status: 'active' as const,
+        },
+      ];
+
+  const newUser: UserRecord = {
+    id: `usr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: data.name,
+    email: data.email,
+    orgId: data.orgId,
+    role: data.role,
+    platformGrants,
+    memberships,
+    isVerifiedEmployee: isPlatformOrg,
+    createdAt: new Date().toISOString(),
+  };
+
+  store.users.push(newUser);
+
+  // Update org member count
+  const org = store.organisations.find((o) => o.id === data.orgId);
+  if (org) {
+    org.memberCount = store.users.filter((u) => u.orgId === data.orgId).length;
+  }
+
+  store.logAudit(
+    actor,
+    'create_user',
+    'user',
+    newUser.id,
+    `Admin created user ${newUser.email} with role "${data.role}" in organisation "${data.orgId}"`
+  );
+
+  return newUser;
+}
+
+export function updateUser(
+  actor: Actor,
+  userId: string,
+  data: {
+    name?: string;
+    email?: string;
+    role?: string;
+    orgId?: string;
+  }
+): UserRecord {
+  const decision = authorize(actor, 'manage_org', {
+    kind: 'org',
+    audience: 'public',
+  });
+  if (!decision.allow) {
+    throw new Error(`Unauthorized: ${decision.reason}`);
+  }
+
+  const user = store.users.find((u) => u.id === userId);
+  if (!user) {
+    throw new Error(`User with ID "${userId}" not found.`);
+  }
+
+  if (data.name) user.name = data.name;
+  if (data.email) user.email = data.email;
+  if (data.orgId) user.orgId = data.orgId;
+
+  if (data.role) {
+    user.role = data.role;
+    const isPlatformOrg = user.orgId === 'org-azentio' || user.email.endsWith('@azentio.com');
+    user.isVerifiedEmployee = isPlatformOrg;
+
+    if (isPlatformOrg) {
+      user.platformGrants = [];
+      if (data.role === 'portal_admin') {
+        user.platformGrants.push('portal_admin', 'learning_moderator', 'content_publisher', 'product_owner');
+      } else if (['learning_moderator', 'content_publisher', 'product_owner'].includes(data.role)) {
+        user.platformGrants.push(data.role);
+      }
+      user.memberships = [];
+    } else {
+      user.platformGrants = [];
+      user.memberships = [
+        {
+          orgId: user.orgId,
+          role: (data.role === 'client_admin' ? 'client_admin' : 'client_member') as 'client_admin' | 'client_member',
+          status: 'active' as const,
+        },
+      ];
+    }
+  }
+
+  store.logAudit(
+    actor,
+    'update_user',
+    'user',
+    user.id,
+    `Admin updated user ${user.email} (role: ${user.role}, org: ${user.orgId})`
+  );
+
+  return user;
+}
+
+export function deleteUser(actor: Actor, userId: string): { success: boolean } {
+  const decision = authorize(actor, 'manage_org', {
+    kind: 'org',
+    audience: 'public',
+  });
+  if (!decision.allow) {
+    throw new Error(`Unauthorized: ${decision.reason}`);
+  }
+
+  const idx = store.users.findIndex((u) => u.id === userId);
+  if (idx === -1) {
+    throw new Error(`User not found.`);
+  }
+
+  const deleted = store.users[idx];
+  store.users.splice(idx, 1);
+
+  // Update org count
+  const org = store.organisations.find((o) => o.id === deleted.orgId);
+  if (org) {
+    org.memberCount = store.users.filter((u) => u.orgId === deleted.orgId).length;
+  }
+
+  store.logAudit(
+    actor,
+    'delete_user',
+    'user',
+    userId,
+    `Admin deleted user ${deleted.email} from organisation "${deleted.orgId}"`
+  );
+
+  return { success: true };
+}
+
+export function createOrganisation(
+  actor: Actor,
+  data: {
+    name: string;
+    domain: string;
+    tier?: 'Enterprise' | 'Core' | 'Standard';
+    entitledOfferings?: string[];
+  }
+): Organisation {
+  const decision = authorize(actor, 'manage_org', {
+    kind: 'org',
+    audience: 'public',
+  });
+  if (!decision.allow) {
+    throw new Error(`Unauthorized: ${decision.reason}`);
+  }
+
+  const slug = data.name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+  const id = `org-${slug}`;
+
+  const existing = store.organisations.find((o) => o.id === id || o.domain === data.domain);
+  if (existing) {
+    throw new Error(`Organisation with domain "${data.domain}" already exists.`);
+  }
+
+  const newOrg: Organisation = {
+    id,
+    name: data.name,
+    slug,
+    domain: data.domain,
+    tier: data.tier || 'Enterprise',
+    entitledOfferings: data.entitledOfferings || ['offering-fai', 'offering-cbe'],
+    memberCount: 0,
+    synthetic: true,
+    type: 'client',
+  };
+
+  store.organisations.push(newOrg);
+
+  store.logAudit(
+    actor,
+    'create_organisation',
+    'org',
+    id,
+    `Admin created organisation "${newOrg.name}" (${newOrg.domain})`
+  );
+
+  return newOrg;
+}
+
+export function deleteOrganisation(actor: Actor, orgId: string): { success: boolean } {
+  const decision = authorize(actor, 'manage_org', {
+    kind: 'org',
+    audience: 'public',
+  });
+  if (!decision.allow) {
+    throw new Error(`Unauthorized: ${decision.reason}`);
+  }
+
+  if (orgId === 'org-azentio') {
+    throw new Error('Protected organisation: Cannot delete Azentio Platform.');
+  }
+
+  const idx = store.organisations.findIndex((o) => o.id === orgId);
+  if (idx === -1) {
+    throw new Error(`Organisation not found.`);
+  }
+
+  const deleted = store.organisations[idx];
+  store.organisations.splice(idx, 1);
+
+  // Remove users associated with this deleted organisation
+  store.users = store.users.filter((u) => u.orgId !== orgId);
+
+  store.logAudit(
+    actor,
+    'delete_organisation',
+    'org',
+    orgId,
+    `Admin deleted organisation "${deleted.name}" (${deleted.domain}) and purged its tenant users.`
+  );
+
+  return { success: true };
+}
+
+/**
+ * Dynamic Database Authentication Engine
+ * Fetches user identity, active tenant, and platform grants strictly from the DB!
+ */
+export function authenticateUser(email: string): {
+  actor: Actor;
+  redirectPath: string;
+  user: UserRecord;
+} {
+  const cleanEmail = email.trim().toLowerCase();
+  const user = store.users.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (!user) {
+    throw new Error(
+      `Access Denied: The identity "${email}" is not registered in the system database. Please contact a Portal Administrator to be provisioned.`
+    );
+  }
+
+  const actor: Actor = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+    platformGrants: user.platformGrants || [],
+    memberships: user.memberships || [],
+    activeTenantId: user.memberships && user.memberships.length > 0 ? user.memberships[0].orgId : null,
+    isVerifiedEmployee: user.isVerifiedEmployee,
+    avatar: user.avatar,
+  };
+
+  // Compute dynamic redirect path based on verified DB grants/memberships
+  let redirectPath = '/';
+  if (actor.platformGrants.includes('portal_admin')) {
+    redirectPath = '/admin/orgs';
+  } else if (actor.platformGrants.includes('product_owner')) {
+    redirectPath = '/employee/ideas';
+  } else if (actor.platformGrants.includes('learning_moderator')) {
+    redirectPath = '/moderation/queue';
+  } else if (actor.platformGrants.includes('content_publisher')) {
+    redirectPath = '/publisher/content';
+  } else if (actor.isVerifiedEmployee) {
+    redirectPath = '/employee';
+  } else if (actor.memberships.length > 0) {
+    redirectPath = '/client';
+  }
+
+  return { actor, redirectPath, user };
 }
 
 // AIRA AI Retrieval Engine: Strictly limited to live approved published observations

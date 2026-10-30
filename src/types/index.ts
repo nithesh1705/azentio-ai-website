@@ -222,6 +222,20 @@ export interface Organisation {
   domain: string;
   memberCount: number;
   synthetic: boolean;
+  type?: 'platform' | 'client';
+}
+
+export interface UserRecord {
+  id: string;
+  name: string;
+  email: string;
+  orgId: string;
+  role: string;
+  platformGrants: string[];
+  memberships: Membership[];
+  isVerifiedEmployee: boolean;
+  avatar?: string;
+  createdAt: string;
 }
 
 export interface Offering {
