@@ -144,7 +144,7 @@ class Store {
   }
 }
 
-const store = new Store();
+export const store = new Store();
 
 // --- DAL EXPORTS ---
 
