@@ -179,8 +179,6 @@ export function Navbar() {
         <nav className="hidden lg:flex items-center gap-1.5">
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
           <NavLink href="/about" active={pathname === '/about'}>About</NavLink>
-          <NavLink href="/our-leadership" active={pathname === '/our-leadership'}>Leadership</NavLink>
-          <NavLink href="/our-presence" active={pathname === '/our-presence'}>Presence</NavLink>
           <NavLink href="/products" active={pathname.startsWith('/products')}>Products</NavLink>
 
           {/* Insights dropdown */}
@@ -275,8 +273,6 @@ export function Navbar() {
           >
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Home</Link>
             <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">About</Link>
-            <Link href="/our-leadership" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Leadership</Link>
-            <Link href="/our-presence" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Presence</Link>
             <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Products</Link>
 
             <div className="pt-1 pb-1">
