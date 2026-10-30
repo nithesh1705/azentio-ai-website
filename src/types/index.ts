@@ -51,7 +51,13 @@ export interface ResourceRef {
   | 'playground'
   | 'demo_enquiry'
   | 'hackathon_registration'
-  | 'knowledge';
+  | 'knowledge'
+  | 'live_session'
+  | 'release_note'
+  | 'team'
+  | 'team_note'
+  | 'notification'
+  | 'audit_event';
   id?: string;
   audience: ResourceAudience;
   orgId?: string | null;
@@ -81,7 +87,12 @@ export type Action =
   | 'manage_org'
   | 'access_support'
   | 'run_sandbox'
-  | 'manage_content';
+  | 'manage_content'
+  | 'join'
+  | 'invite'
+  | 'comment'
+  | 'review'
+  | 'search';
 
 export interface Decision {
   allow: boolean;
@@ -410,3 +421,223 @@ export interface ContactEnquiry {
   phone?: string;
   submittedAt: string;
 }
+
+// =========================================================================
+// EMPLOYEE PORTAL SPECIFIC MODELS
+// =========================================================================
+
+export interface PlaygroundScenario {
+  id: string;
+  offeringId: string;
+  offeringName: string;
+  title: string;
+  description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  tags: string[];
+  synthetic: true;
+  inputData: Record<string, any>;
+  parameters: {
+    key: string;
+    label: string;
+    type: 'number' | 'string' | 'boolean' | 'select';
+    default: any;
+    options?: string[];
+  }[];
+}
+
+export interface PlaygroundRun {
+  id: string;
+  userId: string;
+  userName: string;
+  scenarioId: string;
+  scenarioTitle: string;
+  offeringId: string;
+  offeringName: string;
+  mode: 'deterministic' | 'ai_assisted';
+  params: Record<string, any>;
+  outputSummary: string;
+  metrics: { label: string; value: string; delta?: string }[];
+  trace: { step: number; title: string; detail: string; status: 'ok' | 'flagged' }[];
+  evidence: { rule: string; matchedField: string; confidence: number; note: string }[];
+  limitations: string[];
+  status: 'completed' | 'failed';
+  createdAt: string;
+  sharedWithTeamId?: string;
+}
+
+export interface PlaygroundFeedback {
+  id: string;
+  runId: string;
+  userId: string;
+  rating: number; // 1 - 5
+  correctness: 'yes' | 'partly' | 'no';
+  workedWell: string;
+  issuesFound: string;
+  tags: string[];
+  submittedAt: string;
+  editableUntil: string;
+}
+
+export interface LiveSession {
+  id: string;
+  title: string;
+  hostName: string;
+  hostRole: string;
+  startTime: string;
+  durationMinutes: number;
+  status: 'scheduled' | 'live' | 'ended';
+  description: string;
+  agenda: string[];
+  tags: string[];
+  audience: 'employee';
+  recordingMediaId?: string;
+  thumbnailUrl?: string;
+}
+
+export interface LiveComment {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  avatar?: string;
+  body: string;
+  createdAt: string;
+  parentId?: string;
+  reported?: boolean;
+}
+
+export interface Experiment {
+  id: string;
+  ownerId: string;
+  ownerName: string;
+  offeringId: string;
+  offeringName: string;
+  title: string;
+  hypothesis: string;
+  description: string;
+  approach: string;
+  expectedOutcome: string;
+  successMetric: string;
+  status: 'Draft' | 'Submitted' | 'In_Progress' | 'Completed' | 'Archived';
+  tags: string[];
+  collaboratorIds: string[];
+  links: { title: string; url: string }[];
+  visibility: 'employee';
+  results?: { outcome: string; metrics: string; learnings: string };
+  linkedPlaygroundRunIds?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExperimentJoinRequest {
+  id: string;
+  experimentId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'declined';
+  createdAt: string;
+}
+
+export interface ExperimentComment {
+  id: string;
+  experimentId: string;
+  userId: string;
+  userName: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface InternalReleaseNote {
+  id: string;
+  version: string;
+  title: string;
+  date: string;
+  offeringId: string;
+  offeringName: string;
+  type: 'Feature' | 'Improvement' | 'Fix' | 'Known_Issue';
+  summary: string;
+  fullNotes: string;
+  knownIssues?: string[];
+  relatedKnowledgeIds?: string[];
+  relatedExperimentIds?: string[];
+  audience: 'employee' | 'client';
+  published: boolean;
+  scheduledAt?: string;
+  authorId: string;
+}
+
+export interface KnowledgeItem {
+  id: string;
+  title: string;
+  category: string;
+  body: string;
+  ownerId: string;
+  ownerName: string;
+  lastReviewedAt: string;
+  nextReviewDate: string;
+  reviewIntervalDays: 30 | 60 | 90 | 180;
+  reviewStatus: 'current' | 'due_soon' | 'overdue';
+  usefulnessScore: number;
+  tags: string[];
+  relatedOfferingIds: string[];
+  version: number;
+  status: 'Draft' | 'Published' | 'Archived';
+}
+
+export interface KnowledgeVersion {
+  id: string;
+  knowledgeId: string;
+  version: number;
+  title: string;
+  body: string;
+  changedBy: string;
+  changedAt: string;
+  changeSummary: string;
+}
+
+export interface KnowledgeFeedback {
+  id: string;
+  knowledgeId: string;
+  userId: string;
+  feedbackType: 'useful' | 'outdated' | 'wrong';
+  comment?: string;
+  submittedAt: string;
+}
+
+export interface EmployeeTeam {
+  id: string;
+  name: string;
+  leadId: string;
+  leadName: string;
+  goal: string;
+  description: string;
+  maxMembers: number;
+  tags: string[];
+  memberIds: string[];
+  status: 'active' | 'archived';
+  createdAt: string;
+}
+
+export interface TeamNote {
+  id: string;
+  teamId: string;
+  authorId: string;
+  authorName: string;
+  title: string;
+  content: string;
+  pinned: boolean;
+  updatedAt: string;
+}
+
+export interface TeamSubmission {
+  id: string;
+  teamId: string;
+  title: string;
+  summary: string;
+  demoUrl?: string;
+  repoUrl?: string;
+  submittedAt: string;
+}
+

@@ -40,8 +40,15 @@ export function authorize(
     };
   }
 
-  // 4. Learning Moderator Boundary
-  if (action === 'claim' || action === 'request_clarification' || action === 'publish' || action === 'reject' || action === 'unpublish') {
+  // 4. Learning Moderator Boundary (Contributions)
+  if (
+    resource.kind === 'contribution' &&
+    (action === 'claim' ||
+      action === 'request_clarification' ||
+      action === 'publish' ||
+      action === 'reject' ||
+      action === 'unpublish')
+  ) {
     if (!actor.platformGrants.includes('learning_moderator')) {
       return { allow: false, reason: 'Requires learning_moderator grant for moderation actions' };
     }
@@ -88,12 +95,40 @@ export function authorize(
     if (!actor.isVerifiedEmployee) {
       return { allow: false, reason: 'Employee-only resources require verified employee status' };
     }
-    if (action === 'read' || action === 'run_sandbox') {
-      return { allow: true, reason: 'Verified employee permitted for employee tools and playground' };
+    // Content publisher required for configuring live broadcasts or publishing release notes
+    if (
+      action === 'publish' ||
+      action === 'manage_content' ||
+      (action === 'create' && (resource.kind === 'live_session' || resource.kind === 'release_note'))
+    ) {
+      if (
+        actor.platformGrants.includes('content_publisher') ||
+        actor.platformGrants.includes('portal_admin')
+      ) {
+        return { allow: true, reason: 'Content publisher permitted for employee broadcast/release management' };
+      }
+      return { allow: false, reason: 'Requires content_publisher or portal_admin grant' };
     }
-    if (action === 'create' && (resource.kind === 'experiment' || resource.kind === 'knowledge')) {
-      return { allow: true, reason: 'Employee permitted to submit internal experiment or knowledge item' };
+    // Product Owner idea management restriction
+    if (resource.kind === 'idea' && (action === 'update' || action === 'create' || action === 'delete')) {
+      if (!actor.platformGrants.includes('product_owner') && !actor.platformGrants.includes('portal_admin')) {
+        return { allow: false, reason: 'Managing improvement ideas requires product_owner assignment' };
+      }
+      return { allow: true, reason: 'Product owner permitted to manage improvement ideas' };
     }
+    // Update/delete ownership checks for experiments, knowledge, teams
+    if (action === 'update' || action === 'delete') {
+      if (
+        resource.authorId &&
+        resource.authorId !== actor.userId &&
+        !actor.platformGrants.includes('portal_admin')
+      ) {
+        return { allow: false, reason: 'Only the author/owner can modify this employee record' };
+      }
+      return { allow: true, reason: 'Owner or admin permitted to modify employee record' };
+    }
+    // Verified employee permitted for read, run_sandbox, create, join, invite, comment, review, search
+    return { allow: true, reason: 'Verified employee permitted for employee workspace action' };
   }
 
   // 8. Tenant audience checks (Client Workspace)

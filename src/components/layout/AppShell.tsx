@@ -4,6 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import { Navbar } from './Navbar';
 import { PortalSidebar } from './PortalSidebar';
+import { EmployeeShell } from './EmployeeShell';
 import { AIRAWidget } from '@/components/aira/AIRAWidget';
 import { PeekingRobot } from '@/components/widgets/PeekingRobot';
 import Link from 'next/link';
@@ -12,6 +13,11 @@ import { Sparkles, Shield, Cpu, ExternalLink } from 'lucide-react';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // Dedicated Employee Portal shell for all /employee/** routes
+  if (pathname.startsWith('/employee')) {
+    return <EmployeeShell>{children}</EmployeeShell>;
+  }
 
   // Determine if on an internal portal workspace
   const isPortalArea =
