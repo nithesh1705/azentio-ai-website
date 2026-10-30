@@ -2,13 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePersona } from '@/context/PersonaContext';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { getProductDomains, getAllProducts } from '@/server/dal/store';
 import {
   Sparkles,
   ChevronDown,
+  ChevronRight,
   LogIn,
   LogOut,
   Menu,
@@ -18,14 +20,55 @@ import {
   Briefcase,
   BookOpen,
   ArrowRight,
+  Globe2,
+  Users,
+  Landmark,
+  TrendingUp,
+  ShieldAlert,
+  HeartHandshake,
+  Building2,
 } from 'lucide-react';
+
+// Domain icon map
+function DomainIcon({ iconName, className }: { iconName: string; className?: string }) {
+  const icons: Record<string, React.ElementType> = {
+    Landmark,
+    TrendingUp,
+    ShieldAlert,
+    HeartHandshake,
+    Building2,
+  };
+  const Icon = icons[iconName] ?? Sparkles;
+  return <Icon className={className ?? 'w-4 h-4'} />;
+}
+
+// Domain color map (for icon bg tint)
+const DOMAIN_COLOR: Record<string, string> = {
+  'domain-banking':        'bg-blue-500/10 text-blue-500',
+  'domain-capital-markets':'bg-violet-500/10 text-violet-500',
+  'domain-risk-compliance':'bg-rose-500/10 text-rose-500',
+  'domain-insurance':      'bg-amber-500/10 text-amber-500',
+  'domain-erp':            'bg-teal-500/10 text-teal-500',
+};
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { actor, setPersona } = usePersona();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const [mobileMenuOpen, setMobileMenuOpen]       = useState(false);
   const [insightsDropdownOpen, setInsightsDropdownOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [aboutDropdownOpen, setAboutDropdownOpen] = useState(false);
+  const [productsDropdownOpen, setProductsDropdownOpen] = useState(false);
+  const [hoveredDomainId, setHoveredDomainId]     = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen]           = useState(false);
+  // Mobile expand state
+  const [mobileAboutOpen, setMobileAboutOpen]     = useState(false);
+  const [mobileProductsOpen, setMobileProductsOpen] = useState(false);
+  const [mobileExpandedDomain, setMobileExpandedDomain] = useState<string | null>(null);
+
+  const domains     = getProductDomains();
+  const allProducts = getAllProducts();
 
   // isSignedIn = any real authenticated actor (not the anonymous public visitor)
   const isSignedIn =
@@ -66,9 +109,11 @@ export function Navbar() {
     ? 'Client Admin'
     : 'Client';
 
+  // Active state helpers
+  const isAboutActive    = pathname === '/about' || pathname === '/our-leadership' || pathname === '/our-presence';
+  const isProductsActive = pathname.startsWith('/products') || domains.some(d => pathname.startsWith(`/${d.slug}/`));
+
   // ── SIGNED-IN PORTAL TOPBAR ────────────────────────────────────────────────
-  // Only show the minimal topbar when inside an actual portal workspace route.
-  // On public pages (home, about, etc.) show the full public nav instead.
   if (isSignedIn && isPortalRoute) {
     return (
       <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/90 backdrop-blur-md transition-colors shrink-0">
@@ -155,8 +200,6 @@ export function Navbar() {
   }
 
   // ── PUBLIC NAVBAR ─────────────────────────────────────────────────────────
-  // Shown on all public pages. If the user is signed in (but browsing the public
-  // site), replace "Sign In" with "Go to Dashboard" so they can jump back.
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/80 backdrop-blur-md transition-colors shrink-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -178,10 +221,180 @@ export function Navbar() {
         {/* Desktop Nav */}
         <nav className="hidden lg:flex items-center gap-1.5">
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
-          <NavLink href="/about" active={pathname === '/about'}>About</NavLink>
-          <NavLink href="/products" active={pathname.startsWith('/products')}>Products</NavLink>
 
-          {/* Insights dropdown */}
+          {/* ── About dropdown ── */}
+          <div
+            className="relative"
+            onMouseEnter={() => setAboutDropdownOpen(true)}
+            onMouseLeave={() => setAboutDropdownOpen(false)}
+          >
+            <Link
+              href="/about"
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                isAboutActive
+                  ? 'text-primary bg-primary/10 font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              <span>About</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${aboutDropdownOpen ? 'rotate-180' : ''}`} />
+            </Link>
+
+            <AnimatePresence>
+              {aboutDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-1 w-60 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50 space-y-1"
+                >
+                  <AboutDropdownItem
+                    href="/our-leadership"
+                    icon={Users}
+                    title="Our Leadership"
+                    desc="Executive team & board directors"
+                    active={pathname === '/our-leadership'}
+                    color="bg-indigo-500/10 text-indigo-500"
+                  />
+                  <AboutDropdownItem
+                    href="/our-presence"
+                    icon={Globe2}
+                    title="Our Presence"
+                    desc="17 global offices across 5 continents"
+                    active={pathname === '/our-presence'}
+                    color="bg-emerald-500/10 text-emerald-500"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Products megamenu ── */}
+          <div
+            className="relative"
+            onMouseEnter={() => setProductsDropdownOpen(true)}
+            onMouseLeave={() => { setProductsDropdownOpen(false); setHoveredDomainId(null); }}
+          >
+            <Link
+              href="/products"
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                isProductsActive
+                  ? 'text-primary bg-primary/10 font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+              }`}
+            >
+              <span>Products</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${productsDropdownOpen ? 'rotate-180' : ''}`} />
+            </Link>
+
+            <AnimatePresence>
+              {productsDropdownOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 top-full mt-1 flex z-50 rounded-2xl shadow-2xl border border-border bg-card overflow-hidden"
+                  style={{ minWidth: '220px' }}
+                >
+                  {/* Left panel — domain list */}
+                  <div className="w-56 p-2 space-y-0.5">
+                    {domains.map((domain) => {
+                      const colorClass = DOMAIN_COLOR[domain.id] ?? 'bg-muted text-muted-foreground';
+                      const isHovered  = hoveredDomainId === domain.id;
+                      return (
+                        <div
+                          key={domain.id}
+                          onMouseEnter={() => setHoveredDomainId(domain.id)}
+                          onClick={() => { router.push(`/products/${domain.slug}`); setProductsDropdownOpen(false); }}
+                          className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all group ${
+                            isHovered ? 'bg-accent' : 'hover:bg-accent/60'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${colorClass}`}>
+                              <DomainIcon iconName={domain.iconName} className="w-3.5 h-3.5" />
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">{domain.name}</span>
+                          </div>
+                          <ChevronRight className={`w-3.5 h-3.5 transition-all ${isHovered ? 'text-primary translate-x-0.5' : 'text-muted-foreground'}`} />
+                        </div>
+                      );
+                    })}
+
+                    {/* Footer link */}
+                    <div className="border-t border-border/50 mt-1 pt-1">
+                      <Link
+                        href="/products"
+                        onClick={() => setProductsDropdownOpen(false)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        All Products
+                        <ArrowRight className="w-3 h-3 ml-auto" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Right panel — products for hovered domain */}
+                  <AnimatePresence mode="wait">
+                    {hoveredDomainId && (
+                      <motion.div
+                        key={hoveredDomainId}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -8 }}
+                        transition={{ duration: 0.12 }}
+                        className="w-72 border-l border-border/60 p-2 space-y-0.5 bg-card/80"
+                      >
+                        {(() => {
+                          const domain   = domains.find(d => d.id === hoveredDomainId);
+                          const products = allProducts.filter(p => p.domainId === hoveredDomainId);
+                          const colorClass = DOMAIN_COLOR[hoveredDomainId] ?? 'bg-muted text-muted-foreground';
+                          return (
+                            <>
+                              {/* Domain header */}
+                              <div className={`flex items-center gap-2 px-3 py-2 mb-1 rounded-xl ${colorClass} bg-opacity-5`}>
+                                <DomainIcon iconName={domain?.iconName ?? ''} className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-bold uppercase tracking-wide">{domain?.name} Products</span>
+                              </div>
+
+                              {products.map((product) => (
+                                <Link
+                                  key={product.id}
+                                  href={`/${domain?.slug}/${product.slug}`}
+                                  onClick={() => setProductsDropdownOpen(false)}
+                                  className="block px-3 py-2 rounded-xl hover:bg-accent transition-all group"
+                                >
+                                  <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">{product.name}</div>
+                                  <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{product.tagline}</div>
+                                </Link>
+                              ))}
+
+                              {/* View all */}
+                              <div className="border-t border-border/40 mt-1 pt-1">
+                                <Link
+                                  href={`/products/${domain?.slug}`}
+                                  onClick={() => setProductsDropdownOpen(false)}
+                                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                                >
+                                  View all {domain?.name} solutions
+                                  <ArrowRight className="w-3 h-3 ml-auto" />
+                                </Link>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Insights dropdown ── */}
           <div
             className="relative"
             onMouseEnter={() => setInsightsDropdownOpen(true)}
@@ -189,14 +402,14 @@ export function Navbar() {
           >
             <Link
               href="/insights"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 pathname.startsWith('/insights') || pathname === '/careers'
                   ? 'text-primary bg-primary/10 font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               }`}
             >
               <span>Insights</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${insightsDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${insightsDropdownOpen ? 'rotate-180' : ''}`} />
             </Link>
 
             <AnimatePresence>
@@ -208,11 +421,11 @@ export function Navbar() {
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 top-full mt-1 w-64 rounded-2xl bg-card border border-border shadow-2xl p-2 z-50 space-y-1"
                 >
-                  <InsightsDropdownItem href="/insights/case-studies" icon={FileText} title="Case Studies" desc="Client success & transformation stories" active={pathname === '/insights/case-studies'} />
-                  <InsightsDropdownItem href="/insights/blogs" icon={BookOpen} title="Blogs & Research" desc="Technical analysis & whitepapers" active={pathname === '/insights/blogs'} />
-                  <InsightsDropdownItem href="/insights/events" icon={Calendar} title="Events & Summits" desc="Global AI summits & webinars" active={pathname === '/insights/events'} />
-                  <InsightsDropdownItem href="/insights/hackathons" icon={Sparkles} title="AI Hackathons" desc="Global Agentic AI banking competition" active={pathname === '/insights/hackathons'} />
-                  <InsightsDropdownItem href="/careers" icon={Briefcase} title="Careers" desc="Open technology & domain positions" active={pathname === '/careers'} />
+                  <InsightsDropdownItem href="/insights/case-studies" icon={FileText}  title="Case Studies"    desc="Client success & transformation stories" active={pathname === '/insights/case-studies'} />
+                  <InsightsDropdownItem href="/insights/blogs"        icon={BookOpen}  title="Blogs & Research" desc="Technical analysis & whitepapers"        active={pathname === '/insights/blogs'} />
+                  <InsightsDropdownItem href="/insights/events"       icon={Calendar}  title="Events & Summits" desc="Global AI summits & webinars"            active={pathname === '/insights/events'} />
+                  <InsightsDropdownItem href="/insights/hackathons"   icon={Sparkles}  title="AI Hackathons"   desc="Global Agentic AI banking competition"    active={pathname === '/insights/hackathons'} />
+                  <InsightsDropdownItem href="/careers"               icon={Briefcase} title="Careers"         desc="Open technology & domain positions"       active={pathname === '/careers'} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -232,7 +445,7 @@ export function Navbar() {
             <span>Demo</span>
           </Link>
 
-          {/* Auth Action: "Go to Dashboard" if already signed in, else "Sign In" */}
+          {/* Auth Action */}
           {isSignedIn ? (
             <Link
               href={getPortalHome()}
@@ -262,27 +475,131 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ── */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-b border-border bg-background px-4 py-4 space-y-2 text-sm"
+            className="lg:hidden border-b border-border bg-background px-4 py-4 space-y-1 text-sm overflow-hidden"
           >
             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Home</Link>
-            <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">About</Link>
-            <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg font-medium hover:bg-accent">Products</Link>
 
+            {/* Mobile About expandable */}
+            <div>
+              <button
+                onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium hover:bg-accent"
+              >
+                <span>About</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${mobileAboutOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {mobileAboutOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="pl-3 mt-1 space-y-1 overflow-hidden"
+                  >
+                    <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground">
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-500" /><span>About Azentio</span>
+                    </Link>
+                    <Link href="/our-leadership" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground">
+                      <Users className="w-3.5 h-3.5 text-indigo-500" /><span>Our Leadership</span>
+                    </Link>
+                    <Link href="/our-presence" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground">
+                      <Globe2 className="w-3.5 h-3.5 text-emerald-500" /><span>Our Presence</span>
+                    </Link>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Mobile Products expandable */}
+            <div>
+              <button
+                onClick={() => setMobileProductsOpen(!mobileProductsOpen)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium hover:bg-accent"
+              >
+                <span>Products</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${mobileProductsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              <AnimatePresence>
+                {mobileProductsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="pl-3 mt-1 space-y-1 overflow-hidden"
+                  >
+                    {domains.map((domain) => {
+                      const colorClass    = DOMAIN_COLOR[domain.id] ?? 'bg-muted text-muted-foreground';
+                      const domainExpanded = mobileExpandedDomain === domain.id;
+                      const products       = allProducts.filter(p => p.domainId === domain.id);
+                      return (
+                        <div key={domain.id}>
+                          <button
+                            onClick={() => setMobileExpandedDomain(domainExpanded ? null : domain.id)}
+                            className="w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-accent text-foreground"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center ${colorClass}`}>
+                                <DomainIcon iconName={domain.iconName} className="w-3 h-3" />
+                              </div>
+                              <span>{domain.name}</span>
+                            </div>
+                            <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${domainExpanded ? 'rotate-90' : ''}`} />
+                          </button>
+                          <AnimatePresence>
+                            {domainExpanded && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.12 }}
+                                className="pl-4 mt-0.5 space-y-0.5 overflow-hidden"
+                              >
+                                <Link
+                                  href={`/products/${domain.slug}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="block px-3 py-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-accent rounded-lg"
+                                >
+                                  All {domain.name} Products
+                                </Link>
+                                {products.map((product) => (
+                                  <Link
+                                    key={product.id}
+                                    href={`/${domain.slug}/${product.slug}`}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="block px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
+                                  >
+                                    {product.name}
+                                  </Link>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Mobile Insights */}
             <div className="pt-1 pb-1">
               <div className="px-3 py-1 text-xs font-bold uppercase text-muted-foreground tracking-wider">Insights</div>
               <div className="pl-2 space-y-1 mt-1">
                 <Link href="/insights/case-studies" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><FileText className="w-3.5 h-3.5 text-emerald-500" /><span>Case Studies</span></Link>
-                <Link href="/insights/blogs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><BookOpen className="w-3.5 h-3.5 text-amber-500" /><span>Blogs & Research</span></Link>
-                <Link href="/insights/events" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Calendar className="w-3.5 h-3.5 text-cyan-500" /><span>Events</span></Link>
-                <Link href="/insights/hackathons" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Sparkles className="w-3.5 h-3.5 text-teal-500" /><span>Hackathons</span></Link>
-                <Link href="/careers" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Briefcase className="w-3.5 h-3.5 text-indigo-500" /><span>Careers</span></Link>
+                <Link href="/insights/blogs"        onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><BookOpen className="w-3.5 h-3.5 text-amber-500" /><span>Blogs & Research</span></Link>
+                <Link href="/insights/events"       onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Calendar className="w-3.5 h-3.5 text-cyan-500" /><span>Events</span></Link>
+                <Link href="/insights/hackathons"   onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Sparkles className="w-3.5 h-3.5 text-teal-500" /><span>Hackathons</span></Link>
+                <Link href="/careers"               onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs hover:bg-accent text-foreground"><Briefcase className="w-3.5 h-3.5 text-indigo-500" /><span>Careers</span></Link>
               </div>
             </div>
 
@@ -330,18 +647,36 @@ function NavLink({ href, active, children }: { href: string; active: boolean; ch
   );
 }
 
-function InsightsDropdownItem({
-  href,
-  icon: Icon,
-  title,
-  desc,
-  active,
+function AboutDropdownItem({
+  href, icon: Icon, title, desc, active, color,
 }: {
-  href: string;
-  icon: any;
-  title: string;
-  desc: string;
-  active: boolean;
+  href: string; icon: React.ElementType; title: string; desc: string; active: boolean; color: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-start gap-3 p-2.5 rounded-xl transition-all ${
+        active ? 'bg-primary/10 text-primary' : 'hover:bg-accent/80 text-foreground'
+      }`}
+    >
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${color}`}>
+        <Icon className="w-4 h-4" />
+      </div>
+      <div>
+        <div className="text-xs font-bold leading-tight flex items-center gap-1">
+          <span>{title}</span>
+          <ArrowRight className="w-2.5 h-2.5 opacity-40" />
+        </div>
+        <div className="text-[11px] text-muted-foreground leading-tight mt-0.5">{desc}</div>
+      </div>
+    </Link>
+  );
+}
+
+function InsightsDropdownItem({
+  href, icon: Icon, title, desc, active,
+}: {
+  href: string; icon: React.ElementType; title: string; desc: string; active: boolean;
 }) {
   return (
     <Link

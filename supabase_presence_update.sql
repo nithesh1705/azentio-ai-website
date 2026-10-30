@@ -191,3 +191,4 @@ VALUES
         'B2 USA Inc Tx, Irving - Las Colinas The Urban Towers, 222 West las Colinas Blvd. Suite 1650, Irving, Texas 75039, USA',
         '+1 940 294 8080   |   +1 484 265 1137 Extn: 1137'
     );
+

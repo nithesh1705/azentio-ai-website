@@ -277,3 +277,4 @@ VALUES
     ('award-celent-insurance-2026', 2026, 'Noteworthy Solution — Claims Administration Systems (P&C)', 'Celent Claims Report (APAC & EMEA)', 'Claims Automation', 'Premia Insurance', 'Celent Noteworthy'),
     ('award-gartner-erp-2026', 2026, 'Recognized in Voice of the Customer for Cloud ERP', 'Gartner Peer Insights', 'Cloud ERP for Product-Centric Enterprises', 'Orion ERP', 'Gartner Peer Insights')
 ON CONFLICT (id) DO NOTHING;
+
