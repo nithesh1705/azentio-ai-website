@@ -22,8 +22,10 @@ import {
   ChevronRight,
   Cpu,
   Milestone,
+  Quote,
+  Star,
 } from 'lucide-react';
-import { getPresenceOffices, getLeaders } from '@/server/dal/store';
+import { getPresenceOffices, getLeaders, getCustomerStories } from '@/server/dal/store';
 import { DraggableMarquee } from '@/components/ui/DraggableMarquee';
 
 const STATS = [
@@ -91,6 +93,7 @@ const WHY_AZENTIO = [
 export default function AboutPage() {
   const offices = getPresenceOffices();
   const leaders = getLeaders().filter((l) => l.category === 'executive');
+  const customerStories = getCustomerStories();
   const [activeTab, setActiveTab] = useState<'mission' | 'values' | 'standards'>('mission');
 
   return (
@@ -112,16 +115,6 @@ export default function AboutPage() {
       {/* ── 1. HERO SECTION: PURPOSE & STATS ──────────────────────────────── */}
       <section className="relative pt-20 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-4xl mx-auto space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-semibold shadow-xs"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>SINGAPORE HQ • APAX-BACKED • BFSI & ENTERPRISE SPECIALIZATION</span>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -156,9 +149,8 @@ export default function AboutPage() {
           {STATS.map((stat, idx) => (
             <div
               key={idx}
-              className={`p-4 sm:p-5 rounded-2xl bg-card/60 hover:bg-card transition-all text-center border border-border/40 group hover:border-emerald-500/30 ${
-                idx === 4 ? 'col-span-2 md:col-span-1' : ''
-              }`}
+              className={`p-4 sm:p-5 rounded-2xl bg-card/60 hover:bg-card transition-all text-center border border-border/40 group hover:border-emerald-500/30 ${idx === 4 ? 'col-span-2 md:col-span-1' : ''
+                }`}
             >
               <div className="text-2xl sm:text-3xl font-black text-foreground group-hover:text-emerald-500 transition-colors">
                 {stat.value}
@@ -295,31 +287,28 @@ export default function AboutPage() {
             <div className="flex gap-2 p-1.5 rounded-2xl bg-muted/60 border border-border w-fit">
               <button
                 onClick={() => setActiveTab('mission')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'mission'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'mission'
                     ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Our Mission
               </button>
               <button
                 onClick={() => setActiveTab('values')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'values'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'values'
                     ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Core Values
               </button>
               <button
                 onClick={() => setActiveTab('standards')}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === 'standards'
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'standards'
                     ? 'bg-card text-foreground shadow-sm border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                     : 'text-muted-foreground hover:text-foreground'
-                }`}
+                  }`}
               >
                 Governance
               </button>
@@ -424,7 +413,75 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── 5. GLOBAL FOOTPRINT: DRAGGABLE MARQUEE STREAM ─────────────────── */}
+      {/* ── 5. WHAT OUR CUSTOMERS SAY: DRAGGABLE MARQUEE STREAM ───────────── */}
+      <section className="relative py-20 bg-muted/20 border-t border-border/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold mb-2">
+                <Quote className="w-3.5 h-3.5" />
+                <span>Client Proof & Testimonials</span>
+              </div>
+              <h3 className="text-3xl font-extrabold text-foreground tracking-tight">
+                What Our Customers Say
+              </h3>
+              <p className="text-muted-foreground text-xs mt-1">
+                Feedback from banking, compliance, and wealth leaders across our 650+ institutional partners • Drag or swipe • Pauses on hover
+              </p>
+            </div>
+            <Link
+              href="/insights/case-studies"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card hover:bg-accent text-foreground text-xs font-semibold transition-all shadow-xs"
+            >
+              <span>View In-Depth Case Studies</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Live Draggable & Touch-enabled Customer Testimonials Marquee */}
+        <DraggableMarquee speed={20} className="py-2">
+          {customerStories.map((story, idx) => (
+            <div
+              key={`story-${idx}`}
+              className="w-80 sm:w-96 p-6 rounded-3xl border border-border bg-card shadow-sm hover:border-emerald-500/50 hover:shadow-xl transition-all shrink-0 cursor-pointer select-none flex flex-col justify-between"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-amber-500">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">
+                    {story.domain}
+                  </span>
+                </div>
+
+                <p className="text-xs text-foreground/90 font-medium leading-relaxed italic line-clamp-4">
+                  "{story.quote || story.challenge}"
+                </p>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-border/50 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-foreground">{story.clientName}</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {story.quoteAuthor && story.quoteRole
+                      ? `${story.quoteAuthor} • ${story.quoteRole}`
+                      : `${story.country} • Enterprise Client`}
+                  </div>
+                </div>
+                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                  {story.country}
+                </span>
+              </div>
+            </div>
+          ))}
+        </DraggableMarquee>
+      </section>
+
+      {/* ── 6. GLOBAL FOOTPRINT: DRAGGABLE MARQUEE STREAM ─────────────────── */}
       <section className="relative py-20 bg-muted/10 border-t border-border/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-10">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">

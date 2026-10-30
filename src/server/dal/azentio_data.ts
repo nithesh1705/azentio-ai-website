@@ -881,6 +881,10 @@ export const CASE_STUDIES: CustomerStory[] = [
       'Real-time mandate violation warnings before order execution',
       'Rapid growth in assets under management across high net worth tiers',
     ],
+    quote:
+      'MFund Plus consolidated our entire wealth advisory workflow into a single high-impact platform with real-time mandate compliance.',
+    quoteAuthor: 'Wealth Management Leadership',
+    quoteRole: 'Philippine National Bank',
   },
   {
     id: 'case-afnic-floodguard',
@@ -897,7 +901,7 @@ export const CASE_STUDIES: CustomerStory[] = [
       'Automated claim reserve triggers based on weather bureau data feeds',
     ],
     quote:
-      'Azentio Premia enabled us to deliver the FloodGuard product swiftly with complete underwriting controls.',
+      'Azentio Premia enabled us to deliver the FloodGuard product swiftly with complete underwriting controls and automated claim reserve triggers.',
     quoteAuthor: 'Ashok Padmanabhan',
     quoteRole: 'IT Director, Al Fujairah National Insurance',
   },
@@ -916,6 +920,50 @@ export const CASE_STUDIES: CustomerStory[] = [
       '100% compliant e-invoicing with instant tax authority approval',
       'Live warehouse synchronization across regional transit depots',
     ],
+    quote:
+      'End-to-end batch traceability with Orion ERP reduced expiration waste by 35% with 100% compliant e-invoicing across our depots.',
+    quoteAuthor: 'Head of Supply Chain & IT',
+    quoteRole: 'M.H. Enterprises LLC',
+  },
+  {
+    id: 'case-bank-of-beirut',
+    clientName: 'Bank of Beirut',
+    domain: 'Risk & Compliance',
+    country: 'Lebanon',
+    title: 'Bank of Beirut Upgrades AML Surveillance and Screening with AMLOCK',
+    challenge:
+      'High transaction volume across international correspondent channels required automated multi-script sanctions fuzzy matching and lower false positives.',
+    solution:
+      'Implemented Azentio AMLOCK financial crime surveillance suite covering real-time transaction monitoring and PEP screening.',
+    outcomes: [
+      'Reduced false-positive alerts by 40% using advanced behavioral profiling',
+      'Instant MX ISO 20022 message screening across international wires',
+      'Audit-ready suspicious activity reporting (SAR) generation',
+    ],
+    quote:
+      'AMLOCK surveillance delivered exceptional transaction screening precision and reduced false positives by 40% across correspondent accounts.',
+    quoteAuthor: 'Chief Compliance Officer',
+    quoteRole: 'Bank of Beirut',
+  },
+  {
+    id: 'case-al-baraka',
+    clientName: 'Al Baraka Islamic Bank',
+    domain: 'Banking',
+    country: 'Bahrain',
+    title: 'Al Baraka Automates Shari’ah Profit Sharing with iMAL Islamic Core',
+    challenge:
+      'Needed an automated AAOIFI-compliant profit-distribution system to calculate multi-tier Mudarabah and Wakalah investor yields on daily closing balances.',
+    solution:
+      'Deployed Azentio iMAL Islamic Treasury and Profit Calculation engine across retail and corporate deposits.',
+    outcomes: [
+      'Automated daily profit pool computation with zero manual adjustments',
+      'Audit endorsement by external Shari’ah supervisory boards',
+      'Accelerated quarterly dividend and investor yield distribution',
+    ],
+    quote:
+      'iMAL gives our Shari’ah board and institutional depositors absolute confidence in our daily profit pool calculations and allocations.',
+    quoteAuthor: 'Head of Islamic Banking Operations',
+    quoteRole: 'Al Baraka Islamic Bank',
   },
 ];
 
