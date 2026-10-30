@@ -16,14 +16,14 @@ export function PersonaSwitcherBar() {
 
   const personas = [
     { key: 'public', label: 'Public Visitor' },
-    { key: 'employee', label: 'Employee (Maya)' },
-    { key: 'client_member', label: 'Client Member (David @ Alder)' },
-    { key: 'client_admin', label: 'Client Admin (Sarah @ Birchway)' },
-    { key: 'multi_member', label: 'Multi-Org Member (Jordan)' },
-    { key: 'learning_moderator', label: 'Moderator (Liam)' },
-    { key: 'content_publisher', label: 'Publisher (Elena)' },
-    { key: 'product_owner', label: 'Product Owner (Tariq)' },
-    { key: 'portal_admin', label: 'Portal Admin (Priya)' },
+    { key: 'employee', label: 'Employee (Nithesh M)' },
+    { key: 'client_member', label: 'Client Member (Virat Kohli @ abcd.in)' },
+    { key: 'client_admin', label: 'Client Admin (MS Dhoni @ xyz.com)' },
+    { key: 'multi_member', label: 'Multi-Org Member (Hardik Pandya)' },
+    { key: 'learning_moderator', label: 'Moderator (Pranika K)' },
+    { key: 'content_publisher', label: 'Publisher (Nishanth E)' },
+    { key: 'product_owner', label: 'Product Owner (Lewis Hamilton)' },
+    { key: 'portal_admin', label: 'Portal Admin (Max Verstappen)' },
   ];
 
   return (

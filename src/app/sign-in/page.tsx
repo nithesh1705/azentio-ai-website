@@ -28,29 +28,47 @@ export default function SignInPage() {
 
     setMagicSent(true);
     setTimeout(() => {
-      if (email.endsWith('@azentio.com')) {
+      if (email === 'pranika_k@azentio.com') {
+        setPersona('learning_moderator');
+        router.push('/moderation/queue');
+      } else if (email === 'nishanth_e@azentio.com') {
+        setPersona('content_publisher');
+        router.push('/publisher/content');
+      } else if (email === 'lewis_hamilton@azentio.com') {
+        setPersona('product_owner');
+        router.push('/employee/ideas');
+      } else if (email === 'max_verstappen@azentio.com') {
+        setPersona('portal_admin');
+        router.push('/admin/orgs');
+      } else if (email.endsWith('@azentio.com')) {
         setPersona('employee');
         router.push('/employee');
-      } else if (email.includes('alder')) {
+      } else if (email.includes('abcd.in')) {
         setPersona('client_member');
         router.push('/client');
-      } else if (email.includes('birchway')) {
-        setPersona('client_admin');
+      } else if (email.includes('xyz.com')) {
+        if (email.includes('dhoni')) {
+          setPersona('client_admin');
+        } else {
+          setPersona('multi_member');
+        }
         router.push('/client');
       } else {
         setPersona('public');
         router.push('/');
       }
-    }, 1200);
+    }, 800);
   };
 
   const quickPersonas = [
-    { key: 'employee', label: 'Sign in as Employee (Maya Lin)', path: '/employee' },
-    { key: 'client_member', label: 'Sign in as Client Member (David @ Alder)', path: '/client' },
-    { key: 'client_admin', label: 'Sign in as Client Admin (Sarah @ Birchway)', path: '/client' },
-    { key: 'learning_moderator', label: 'Sign in as Moderator (Liam)', path: '/moderation/queue' },
-    { key: 'product_owner', label: 'Sign in as Product Owner (Tariq)', path: '/employee/ideas' },
-    { key: 'portal_admin', label: 'Sign in as Portal Admin (Priya)', path: '/admin/orgs' },
+    { key: 'employee', label: 'Sign in as Employee (Nithesh M)', path: '/employee' },
+    { key: 'client_member', label: 'Sign in as Client Member (Virat Kohli @ abcd.in)', path: '/client' },
+    { key: 'client_admin', label: 'Sign in as Client Admin (MS Dhoni @ xyz.com)', path: '/client' },
+    { key: 'multi_member', label: 'Sign in as Multi-Org (Hardik Pandya @ xyz.com & abcd.in)', path: '/client' },
+    { key: 'learning_moderator', label: 'Sign in as Moderator (Pranika K)', path: '/moderation/queue' },
+    { key: 'content_publisher', label: 'Sign in as Publisher (Nishanth E)', path: '/publisher/content' },
+    { key: 'product_owner', label: 'Sign in as Product Owner (Lewis Hamilton)', path: '/employee/ideas' },
+    { key: 'portal_admin', label: 'Sign in as Portal Admin (Max Verstappen)', path: '/admin/orgs' },
   ];
 
   return (
@@ -89,7 +107,7 @@ export default function SignInPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@azentio.com or name@alderfinance.synthetic"
+                  placeholder="nithesh_m@azentio.com or virat_kohli@abcd.in"
                   className="w-full bg-muted/60 pl-9 pr-4 py-2.5 rounded-xl text-xs text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
