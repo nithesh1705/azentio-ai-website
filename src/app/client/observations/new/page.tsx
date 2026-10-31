@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -24,7 +24,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 
-export default function NewObservationPage() {
+function NewObservationInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedOffering = searchParams?.get('offeringId') || '';
@@ -488,5 +488,13 @@ export default function NewObservationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewObservationPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><span className="text-xs text-muted-foreground animate-pulse">Loading form…</span></div>}>
+      <NewObservationInner />
+    </Suspense>
   );
 }
