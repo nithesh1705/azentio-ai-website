@@ -2,760 +2,630 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { usePersona } from '@/context/PersonaContext';
+import { useRouter } from 'next/navigation';
+import { Organisation } from '@/types';
+import { StepupModal } from '@/components/admin/StepupModal';
 import {
-  Settings,
   Building2,
-  Users,
-  UserPlus,
-  Trash2,
-  Edit2,
-  ShieldCheck,
-  PlusCircle,
-  X,
+  Plus,
+  Search,
+  Filter,
+  Download,
+  MoreVertical,
   CheckCircle2,
-  AlertCircle,
-  Cpu,
-  Layers,
-  Lock,
-  Globe,
+  AlertTriangle,
+  Archive,
   RefreshCw,
+  ExternalLink,
+  Shield,
+  Layers,
+  Users,
+  Calendar,
 } from 'lucide-react';
-import { Organisation, UserRecord } from '@/types';
 
-export default function AdminOrgsManagementPage() {
-  const { actor, refreshOrganisations } = usePersona();
-  const isAdmin = actor.platformGrants.includes('portal_admin');
-
-  const [organisations, setOrganisations] = useState<Organisation[]>([]);
-  const [users, setUsers] = useState<UserRecord[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('org-azentio');
+export default function AdminOrgsPage() {
+  const router = useRouter();
+  const [orgs, setOrgs] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<'name' | 'tier' | 'memberCount' | 'status'>('name');
+  const [sortAsc, setSortAsc] = useState(true);
 
-  // Modals state
-  const [showAddOrgModal, setShowAddOrgModal] = useState(false);
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserRecord | null>(null);
+  // Modal states
+  const [suspendTarget, setSuspendTarget] = useState<Organisation | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [showStepup, setShowStepup] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Organisation | null>(null);
+  const [archiveReason, setArchiveReason] = useState('');
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // New Org Form
-  const [newOrgName, setNewOrgName] = useState('');
-  const [newOrgDomain, setNewOrgDomain] = useState('');
-  const [newOrgTier, setNewOrgTier] = useState<'Enterprise' | 'Core' | 'Standard'>('Enterprise');
-
-  // New User Form
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserRole, setNewUserRole] = useState('client_member');
-
-  // Fetch data
-  const fetchData = async () => {
+  const fetchOrgs = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [orgsRes, usersRes] = await Promise.all([
-        fetch('/api/admin/orgs'),
-        fetch('/api/admin/users'),
-      ]);
-
-      if (orgsRes.ok) {
-        const orgsData = await orgsRes.json();
-        setOrganisations(orgsData.organisations || []);
-        if (orgsData.organisations?.length > 0 && !selectedOrgId) {
-          setSelectedOrgId(orgsData.organisations[0].id);
+      const res = await fetch('/api/admin/orgs');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.organisations) {
+          setOrgs(data.organisations);
         }
       }
-
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(usersData.users || []);
-      }
-    } catch {
-      // fallback
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: 'Failed to load organisations: ' + err.message });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchOrgs();
   }, []);
 
-  if (!isAdmin) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
-        <ShieldCheck className="w-12 h-12 text-destructive mx-auto" />
-        <h1 className="text-2xl font-bold text-foreground">Portal Admin Access Restricted</h1>
-        <p className="text-sm text-muted-foreground">
-          Organisation and user governance requires the &ldquo;portal_admin&rdquo; platform grant.
-          Please switch to Max Verstappen (Portal Admin) using the top persona switcher or sign-in page.
-        </p>
-      </div>
-    );
-  }
+  // Filter & Sort
+  const filteredOrgs = orgs
+    .filter((o) => {
+      const matchesStatus =
+        statusFilter === 'all' || (o.status || 'active') === statusFilter;
+      const matchesSearch =
+        o.name.toLowerCase().includes(search.toLowerCase()) ||
+        o.domain.toLowerCase().includes(search.toLowerCase()) ||
+        o.slug.toLowerCase().includes(search.toLowerCase());
+      return matchesStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      let valA: any = a[sortField] || '';
+      let valB: any = b[sortField] || '';
+      if (typeof valA === 'string') {
+        valA = valA.toLowerCase();
+        valB = valB.toLowerCase();
+      }
+      if (valA < valB) return sortAsc ? -1 : 1;
+      if (valA > valB) return sortAsc ? 1 : -1;
+      return 0;
+    });
 
-  const selectedOrg = organisations.find((o) => o.id === selectedOrgId) || organisations[0];
-  const isSelectedOrgPlatform = selectedOrg?.id === 'org-azentio' || selectedOrg?.type === 'platform';
-  const orgUsers = users.filter((u) => u.orgId === selectedOrg?.id);
+  const handleExportCSV = () => {
+    window.open('/api/admin/orgs?format=csv', '_blank');
+    setFeedback({ type: 'success', message: 'Export initiated. Download will begin shortly.' });
+  };
 
-  // Handle Add Organisation
-  const handleCreateOrg = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newOrgName || !newOrgDomain) return;
-
+  const handleSuspendSubmit = async () => {
+    if (!suspendTarget) return;
     try {
       const res = await fetch('/api/admin/orgs', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          actor,
-          name: newOrgName,
-          domain: newOrgDomain,
-          tier: newOrgTier,
-          entitledOfferings: ['offering-fai', 'offering-cbe'],
+          id: suspendTarget.id,
+          action: 'suspend',
+          reason: suspendReason,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok || !data.success) {
+        setFeedback({ type: 'error', message: data.error || 'Failed to suspend organisation' });
+        return;
+      }
 
-      setNotification({ type: 'success', message: `Organisation "${newOrgName}" created successfully.` });
-      setShowAddOrgModal(false);
-      setNewOrgName('');
-      setNewOrgDomain('');
-      await fetchData();
-      await refreshOrganisations();
-      setSelectedOrgId(data.organisation.id);
+      setFeedback({ type: 'success', message: `Organisation ${suspendTarget.name} has been suspended.` });
+      setSuspendTarget(null);
+      setSuspendReason('');
+      setShowStepup(false);
+      fetchOrgs();
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
+      setFeedback({ type: 'error', message: err.message });
     }
   };
 
-  // Handle Delete Organisation
-  const handleDeleteOrg = async (orgId: string) => {
-    if (orgId === 'org-azentio') {
-      alert('The Azentio Platform organization cannot be deleted.');
-      return;
-    }
-
-    if (!confirm('Are you sure you want to delete this organisation? All its member users will be removed.')) {
-      return;
-    }
-
+  const handleReactivate = async (org: Organisation) => {
     try {
       const res = await fetch('/api/admin/orgs', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actor, orgId }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setNotification({ type: 'success', message: 'Organisation deleted and tenant records purged.' });
-      await fetchData();
-      await refreshOrganisations();
-      setSelectedOrgId('org-azentio');
-    } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
-    }
-  };
-
-  // Handle Add User
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserName || !newUserEmail || !selectedOrg) return;
-
-    try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          actor,
-          name: newUserName,
-          email: newUserEmail,
-          orgId: selectedOrg.id,
-          role: newUserRole,
+          id: org.id,
+          action: 'reactivate',
         }),
       });
-
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setNotification({
-        type: 'success',
-        message: `User ${data.user.name} added to ${selectedOrg.name} as "${newUserRole}".`,
-      });
-      setShowAddUserModal(false);
-      setNewUserName('');
-      setNewUserEmail('');
-      await fetchData();
+      if (!res.ok || !data.success) {
+        setFeedback({ type: 'error', message: data.error || 'Failed to reactivate organisation' });
+        return;
+      }
+      setFeedback({ type: 'success', message: `Organisation ${org.name} has been reactivated.` });
+      fetchOrgs();
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
+      setFeedback({ type: 'error', message: err.message });
     }
   };
 
-  // Handle Edit User
-  const handleUpdateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingUser) return;
-
+  const handleArchiveSubmit = async () => {
+    if (!archiveTarget) return;
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'PUT',
+      const res = await fetch('/api/admin/orgs', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          actor,
-          userId: editingUser.id,
-          name: editingUser.name,
-          email: editingUser.email,
-          role: editingUser.role,
-          orgId: editingUser.orgId,
+          id: archiveTarget.id,
+          action: 'request_archive',
+          reason: archiveReason || 'Sunset per administrator',
         }),
       });
-
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setNotification({
+      if (!res.ok || !data.success) {
+        setFeedback({ type: 'error', message: data.error || 'Failed to request archiving' });
+        return;
+      }
+      setFeedback({
         type: 'success',
-        message: `Updated user ${editingUser.name}.`,
+        message: `Dual-control approval request created: A second administrator must approve archiving ${archiveTarget.name}.`,
       });
-      setEditingUser(null);
-      await fetchData();
+      setArchiveTarget(null);
+      setArchiveReason('');
+      fetchOrgs();
     } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
+      setFeedback({ type: 'error', message: err.message });
     }
   };
 
-  // Handle Delete User
-  const handleDeleteUser = async (userId: string, email: string) => {
-    if (!confirm(`Are you sure you want to remove user "${email}"?`)) return;
-
-    try {
-      const res = await fetch('/api/admin/users', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actor, userId }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      setNotification({ type: 'success', message: `User "${email}" removed from database.` });
-      await fetchData();
-    } catch (err: any) {
-      setNotification({ type: 'error', message: err.message });
-    }
-  };
-
-  // Role choices depending on Org
-  const azentioRoles = [
-    { value: 'employee', label: 'Employee (Base Platform)' },
-    { value: 'learning_moderator', label: 'Learning Moderator (Queue & Review)' },
-    { value: 'content_publisher', label: 'Content Publisher (Banners & Media)' },
-    { value: 'product_owner', label: 'Product Owner (Improvement Loop)' },
-    { value: 'portal_admin', label: 'Portal Administrator (Full Admin)' },
-  ];
-
-  const clientRoles = [
-    { value: 'client_member', label: 'Client Member (Observations & Sandboxes)' },
-    { value: 'client_admin', label: 'Client Administrator (Manage Org Members)' },
-  ];
+  const totalCount = orgs.length;
+  const activeCount = orgs.filter((o) => (o.status || 'active') === 'active').length;
+  const suspendedCount = orgs.filter((o) => o.status === 'suspended').length;
+  const archivedCount = orgs.filter((o) => o.status === 'archived').length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div className="space-y-6">
+      {/* Top Banner Alert Feedback */}
+      {feedback && (
+        <div
+          className={`p-4 rounded-xl text-sm flex items-center justify-between border ${
+            feedback.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              : 'bg-destructive/10 border-destructive/30 text-destructive'
+          }`}
+        >
+          <span>{feedback.message}</span>
+          <button
+            onClick={() => setFeedback(null)}
+            className="text-xs underline hover:opacity-80 ml-4"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Header and Quick Stats */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs uppercase tracking-widest font-bold text-rose-500">
-              Portal Governance Console
-            </span>
-            <span className="badge-synthetic text-xs">Admin Audit Active</span>
-          </div>
-          <h1 className="text-3xl font-extrabold text-foreground tracking-tight">
-            Organisation & User IAM Management
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <Building2 className="w-6 h-6 text-primary" />
+            <span>Organisations Management</span>
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-            Manage organizations (Azentio, ABCD, XYZ), create/remove tenants, and administer user CRUD with role segregation.
+          <p className="text-xs text-muted-foreground mt-1">
+            Govern tenant workspaces, subscription tiers, product entitlement bundles, and lifecycle states.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={() => setShowAddOrgModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-md shadow-emerald-500/20"
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-border bg-card hover:bg-muted transition-colors"
           >
-            <PlusCircle className="w-4 h-4" />
-            <span>Create Organisation</span>
+            <Download className="w-3.5 h-3.5 text-muted-foreground" />
+            <span>Export CSV</span>
           </button>
-
           <Link
-            href="/admin/audit"
-            className="px-4 py-2.5 rounded-xl bg-card border border-border text-xs font-semibold text-foreground hover:bg-muted transition-all"
+            href="/admin/orgs/new"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
           >
-            <span>View Audit Logs</span>
+            <Plus className="w-4 h-4" />
+            <span>New Organisation</span>
           </Link>
         </div>
       </div>
 
-      {/* Notifications banner */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`mb-6 p-4 rounded-2xl border text-xs flex items-center justify-between ${
-              notification.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
-                : 'bg-destructive/10 border-destructive/20 text-destructive'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {notification.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-destructive" />
-              )}
-              <span>{notification.message}</span>
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className="font-bold hover:underline ml-4"
-            >
-              Dismiss
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground font-medium">Total Workspaces</p>
+          <p className="text-2xl font-bold mt-1 text-foreground">{totalCount}</p>
+        </div>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground font-medium">Active Tenants</p>
+          <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{activeCount}</p>
+        </div>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground font-medium">Suspended</p>
+          <p className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">{suspendedCount}</p>
+        </div>
+        <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+          <p className="text-xs text-muted-foreground font-medium">Archived</p>
+          <p className="text-2xl font-bold mt-1 text-muted-foreground">{archivedCount}</p>
+        </div>
+      </div>
 
-      {/* Organisation Navigation Tabs */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-border">
-          {organisations.map((org) => {
-            const isPlatform = org.id === 'org-azentio' || org.type === 'platform';
-            const isSelected = selectedOrg?.id === org.id;
-
-            return (
+      {/* Search, Filter Tabs and Controls */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Status Tabs */}
+          <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg text-xs overflow-x-auto">
+            {['all', 'active', 'suspended', 'archived'].map((status) => (
               <button
-                key={org.id}
-                onClick={() => setSelectedOrgId(org.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  isSelected
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-md font-medium capitalize transition-colors whitespace-nowrap ${
+                  statusFilter === status
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {isPlatform ? (
-                  <Building2 className="w-4 h-4 text-indigo-400" />
-                ) : (
-                  <Globe className="w-4 h-4 text-emerald-500" />
-                )}
-                <span>{org.name}</span>
-                <span className="text-[10px] opacity-75 font-mono">({users.filter(u => u.orgId === org.id).length})</span>
+                {status}
               </button>
+            ))}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, domain, slug..."
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        {/* Desktop Table View (>=768px) */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-xs text-left border-collapse">
+            <thead>
+              <tr className="border-b border-border/80 text-muted-foreground font-medium">
+                <th
+                  className="py-3 px-3 cursor-pointer hover:text-foreground"
+                  onClick={() => {
+                    setSortField('name');
+                    setSortAsc(!sortAsc);
+                  }}
+                >
+                  Organisation Name
+                </th>
+                <th className="py-3 px-3">Domain</th>
+                <th
+                  className="py-3 px-3 cursor-pointer hover:text-foreground"
+                  onClick={() => {
+                    setSortField('tier');
+                    setSortAsc(!sortAsc);
+                  }}
+                >
+                  Tier
+                </th>
+                <th
+                  className="py-3 px-3 cursor-pointer hover:text-foreground"
+                  onClick={() => {
+                    setSortField('memberCount');
+                    setSortAsc(!sortAsc);
+                  }}
+                >
+                  Members
+                </th>
+                <th className="py-3 px-3">Entitled Offerings</th>
+                <th
+                  className="py-3 px-3 cursor-pointer hover:text-foreground"
+                  onClick={() => {
+                    setSortField('status');
+                    setSortAsc(!sortAsc);
+                  }}
+                >
+                  Status
+                </th>
+                <th className="py-3 px-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {filteredOrgs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No organisations match your search or filter.
+                  </td>
+                </tr>
+              ) : (
+                filteredOrgs.map((org) => {
+                  const status = org.status || 'active';
+                  const isPlatformRoot = org.type === 'platform';
+                  return (
+                    <tr key={org.id} className="hover:bg-muted/40 transition-colors group">
+                      <td className="py-3 px-3">
+                        <Link
+                          href={`/admin/orgs/${org.id}`}
+                          className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5"
+                        >
+                          <span>{org.name}</span>
+                          {isPlatformRoot && (
+                            <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1 rounded">
+                              Root
+                            </span>
+                          )}
+                        </Link>
+                        <span className="text-[10px] text-muted-foreground font-mono">{org.slug}</span>
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">{org.domain}</td>
+                      <td className="py-3 px-3">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            org.tier === 'Enterprise'
+                              ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
+                              : 'bg-muted text-foreground'
+                          }`}
+                        >
+                          {org.tier}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 font-medium text-foreground">{org.memberCount}</td>
+                      <td className="py-3 px-3">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {org.entitledOfferings.slice(0, 3).map((slug) => (
+                            <span
+                              key={slug}
+                              className="px-1.5 py-0.2 rounded text-[9px] bg-muted/60 text-muted-foreground border border-border/50"
+                            >
+                              {slug.replace('offering-', '')}
+                            </span>
+                          ))}
+                          {org.entitledOfferings.length > 3 && (
+                            <span className="text-[9px] text-muted-foreground">
+                              +{org.entitledOfferings.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                            status === 'active'
+                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                              : status === 'suspended'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              status === 'active'
+                                ? 'bg-emerald-500'
+                                : status === 'suspended'
+                                ? 'bg-amber-500'
+                                : 'bg-muted-foreground'
+                            }`}
+                          />
+                          <span className="capitalize">{status}</span>
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            href={`/admin/orgs/${org.id}`}
+                            className="px-2 py-1 text-[11px] rounded hover:bg-muted font-medium transition-colors"
+                          >
+                            Manage
+                          </Link>
+
+                          {!isPlatformRoot && status === 'active' && (
+                            <button
+                              onClick={() => {
+                                setSuspendTarget(org);
+                                setSuspendReason('');
+                              }}
+                              className="px-2 py-1 text-[11px] rounded text-amber-600 hover:bg-amber-500/10 font-medium transition-colors"
+                            >
+                              Suspend
+                            </button>
+                          )}
+
+                          {!isPlatformRoot && status === 'suspended' && (
+                            <button
+                              onClick={() => handleReactivate(org)}
+                              className="px-2 py-1 text-[11px] rounded text-emerald-600 hover:bg-emerald-500/10 font-medium transition-colors"
+                            >
+                              Reactivate
+                            </button>
+                          )}
+
+                          {!isPlatformRoot && status !== 'archived' && (
+                            <button
+                              onClick={() => {
+                                setArchiveTarget(org);
+                                setArchiveReason('');
+                              }}
+                              className="px-2 py-1 text-[11px] rounded text-muted-foreground hover:bg-muted transition-colors"
+                              title="Request Archiving (Dual Control)"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards View (<768px) */}
+        <div className="md:hidden space-y-3">
+          {filteredOrgs.map((org) => {
+            const status = org.status || 'active';
+            const isPlatformRoot = org.type === 'platform';
+            return (
+              <div
+                key={org.id}
+                className="p-3.5 rounded-xl border border-border bg-card/60 space-y-2.5"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <Link
+                      href={`/admin/orgs/${org.id}`}
+                      className="font-semibold text-sm text-foreground hover:underline"
+                    >
+                      {org.name}
+                    </Link>
+                    <p className="text-[11px] text-muted-foreground font-mono">{org.domain}</p>
+                  </div>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-semibold capitalize ${
+                      status === 'active'
+                        ? 'bg-emerald-500/10 text-emerald-600'
+                        : status === 'suspended'
+                        ? 'bg-amber-500/10 text-amber-600'
+                        : 'bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    {status}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-muted-foreground pt-1 border-t border-border/50">
+                  <span>Tier: <strong>{org.tier}</strong></span>
+                  <span>Members: <strong>{org.memberCount}</strong></span>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
+                  <Link
+                    href={`/admin/orgs/${org.id}`}
+                    className="px-3 py-1.5 text-xs rounded-lg bg-muted text-foreground font-medium"
+                  >
+                    View Details
+                  </Link>
+                  {!isPlatformRoot && status === 'active' && (
+                    <button
+                      onClick={() => setSuspendTarget(org)}
+                      className="px-3 py-1.5 text-xs rounded-lg text-amber-600 bg-amber-500/10 font-medium"
+                    >
+                      Suspend
+                    </button>
+                  )}
+                  {!isPlatformRoot && status === 'suspended' && (
+                    <button
+                      onClick={() => handleReactivate(org)}
+                      className="px-3 py-1.5 text-xs rounded-lg text-emerald-600 bg-emerald-500/10 font-medium"
+                    >
+                      Reactivate
+                    </button>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Selected Organisation Workspace Detail */}
-      {selectedOrg && (
-        <div className="space-y-8">
-          {/* Org Summary Card */}
-          <div className="p-6 sm:p-8 rounded-3xl glass-panel border border-border flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                    isSelectedOrgPlatform
-                      ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                      : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                  }`}
-                >
-                  {isSelectedOrgPlatform ? 'Platform Master Organisation' : `${selectedOrg.tier} Client Tenant`}
-                </span>
-                <span className="text-xs text-muted-foreground font-mono">
-                  Domain: {selectedOrg.domain}
-                </span>
+      {/* Suspend Reason Modal */}
+      {suspendTarget && !showStepup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-amber-500">
+              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-foreground">Suspend Organisation</h3>
+                <p className="text-xs text-muted-foreground">Action targets {suspendTarget.name}</p>
               </div>
-              <h2 className="text-2xl font-bold text-foreground">{selectedOrg.name}</h2>
-              <p className="text-xs text-muted-foreground">
-                {isSelectedOrgPlatform
-                  ? 'Internal Azentio engineering, moderation, product management, and platform administration team.'
-                  : `Isolated client workspace with entitled product sandboxes and granular member access.`}
-              </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs text-muted-foreground">
+              Suspending an organisation immediately halts user access, disables API tokens, and suppresses automated notifications.
+            </p>
+
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">
+                Reason for Suspension (minimum 10 characters)
+              </label>
+              <textarea
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="e.g. Contractual non-payment, compliance hold, or client request..."
+                rows={3}
+                className="w-full p-2.5 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2.5">
               <button
-                onClick={() => {
-                  setNewUserRole(isSelectedOrgPlatform ? 'employee' : 'client_member');
-                  setShowAddUserModal(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all shadow-sm"
+                onClick={() => setSuspendTarget(null)}
+                className="px-3.5 py-2 text-xs font-medium rounded-lg border border-border hover:bg-muted"
               >
-                <UserPlus className="w-4 h-4" />
-                <span>Add User to {selectedOrg.slug}</span>
+                Cancel
               </button>
-
-              {!isSelectedOrgPlatform && (
-                <button
-                  onClick={() => handleDeleteOrg(selectedOrg.id)}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 text-xs font-semibold hover:bg-destructive/20 transition-all"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Remove Organisation</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Users Table for the selected Org */}
-          <div className="p-6 sm:p-8 rounded-3xl glass-panel border border-border">
-            <div className="flex items-center justify-between pb-4 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <h3 className="font-bold text-base text-foreground">
-                  Registered Users in {selectedOrg.name} ({orgUsers.length})
-                </h3>
-              </div>
-              <span className="text-xs text-muted-foreground font-mono">
-                Roles restricted by organisation type
-              </span>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {orgUsers.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-2xl">
-                  No users currently assigned to this organisation. Click &ldquo;Add User&rdquo; above.
-                </div>
-              ) : (
-                orgUsers.map((u) => {
-                  const isPlatformRole = ['employee', 'learning_moderator', 'content_publisher', 'product_owner', 'portal_admin'].includes(u.role);
-
-                  return (
-                    <div
-                      key={u.id}
-                      className="p-4 rounded-2xl bg-muted/30 border border-border/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/50 transition-colors"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs sm:text-sm text-foreground">{u.name}</span>
-                          <span
-                            className={`text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded ${
-                              isPlatformRole
-                                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                                : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                            }`}
-                          >
-                            {u.role.replace(/_/g, ' ')}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground font-mono">{u.email}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setEditingUser(u)}
-                          className="p-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-xs"
-                          title="Edit User"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.email)}
-                          className="p-2 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 text-xs"
-                          title="Remove User"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+              <button
+                disabled={suspendReason.trim().length < 10}
+                onClick={() => setShowStepup(true)}
+                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                Proceed to Step-Up
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Add Organisation */}
-      <AnimatePresence>
-        {showAddOrgModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-card border border-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-base text-foreground">Create New Client Organisation</h3>
-                <button
-                  onClick={() => setShowAddOrgModal(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+      {/* Step-Up Verification for Suspension */}
+      <StepupModal
+        isOpen={showStepup}
+        purpose={`Suspend organisation ${suspendTarget?.name}`}
+        onSuccess={handleSuspendSubmit}
+        onCancel={() => setShowStepup(false)}
+      />
+
+      {/* Dual Control Archive Confirmation Modal */}
+      {archiveTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-primary">
+              <Archive className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <h3 className="font-semibold text-foreground">Request Organisation Archiving</h3>
+                <p className="text-xs text-muted-foreground">Dual Control Governance Invariant</p>
               </div>
+            </div>
 
-              <form onSubmit={handleCreateOrg} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Organisation Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newOrgName}
-                    onChange={(e) => setNewOrgName(e.target.value)}
-                    placeholder="e.g. Apex Global Bank"
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
+            <p className="text-xs text-muted-foreground">
+              Per Section 2 of governance policy, <strong>archiving an organisation requires approval by a second administrator</strong>.
+              Submitting this form creates a pending approval request.
+            </p>
 
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Corporate Domain
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newOrgDomain}
-                    onChange={(e) => setNewOrgDomain(e.target.value)}
-                    placeholder="e.g. apexbank.com"
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
+            <div>
+              <label className="block text-xs font-medium text-foreground mb-1">
+                Archival Justification & Decommission Notes
+              </label>
+              <textarea
+                value={archiveReason}
+                onChange={(e) => setArchiveReason(e.target.value)}
+                placeholder="Detail reason for decommission (contract end, merger, migration)..."
+                rows={3}
+                className="w-full p-2.5 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
 
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Tier
-                  </label>
-                  <select
-                    value={newOrgTier}
-                    onChange={(e) => setNewOrgTier(e.target.value as any)}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="Enterprise">Enterprise</option>
-                    <option value="Core">Core</option>
-                    <option value="Standard">Standard</option>
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddOrgModal(false)}
-                    className="px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
-                  >
-                    Create Organisation
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+            <div className="flex justify-end gap-2.5">
+              <button
+                onClick={() => setArchiveTarget(null)}
+                className="px-3.5 py-2 text-xs font-medium rounded-lg border border-border hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleArchiveSubmit}
+                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Submit Dual Control Request
+              </button>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Add User */}
-      <AnimatePresence>
-        {showAddUserModal && selectedOrg && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-card border border-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-base text-foreground">Add User to {selectedOrg.name}</h3>
-                  <p className="text-[11px] text-muted-foreground">
-                    Assign role appropriate for {isSelectedOrgPlatform ? 'Azentio Platform' : 'Client Organisation'}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowAddUserModal(false)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateUser} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUserName}
-                    onChange={(e) => setNewUserName(e.target.value)}
-                    placeholder="e.g. John Doe"
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Work Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={newUserEmail}
-                    onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder={`user@${selectedOrg.domain}`}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Assigned Role ({isSelectedOrgPlatform ? 'Azentio Platform Roles' : 'Client Tenant Roles'})
-                  </label>
-                  <select
-                    value={newUserRole}
-                    onChange={(e) => setNewUserRole(e.target.value)}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {isSelectedOrgPlatform
-                      ? azentioRoles.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))
-                      : clientRoles.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddUserModal(false)}
-                    className="px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
-                  >
-                    Save User to Database
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Edit User */}
-      <AnimatePresence>
-        {editingUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-card border border-border rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-base text-foreground">Edit User Account</h3>
-                <button
-                  onClick={() => setEditingUser(null)}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateUser} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingUser.name}
-                    onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={editingUser.email}
-                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-foreground mb-1">
-                    Role
-                  </label>
-                  <select
-                    value={editingUser.role}
-                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
-                    className="w-full bg-muted/60 border border-border rounded-xl px-3.5 py-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {editingUser.orgId === 'org-azentio'
-                      ? azentioRoles.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))
-                      : clientRoles.map((r) => (
-                          <option key={r.value} value={r.value}>
-                            {r.label}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="px-4 py-2 rounded-xl text-muted-foreground hover:bg-muted"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90"
-                  >
-                    Update User
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
