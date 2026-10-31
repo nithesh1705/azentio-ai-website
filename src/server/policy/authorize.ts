@@ -212,13 +212,37 @@ export function authorize(
   // 10. Platform Administration
   if (
     action === 'manage_org' ||
+    action === 'admin.org.suspend' ||
+    action === 'admin.org.archive' ||
     action === 'grant_platform_role' ||
+    action === 'admin.grant.assign' ||
+    action === 'admin.audit.export' ||
+    action === 'admin.user.anonymise' ||
+    action === 'notify.broadcast' ||
     action === 'access_support'
   ) {
+    if (!actor.isVerifiedEmployee) {
+      return { allow: false, reason: 'Platform administration requires verified employee status' };
+    }
     if (actor.platformGrants.includes('portal_admin')) {
       return { allow: true, reason: 'Portal administrator permitted' };
     }
     return { allow: false, reason: 'Requires portal_admin grant' };
+  }
+
+  // 10b. Content Publishing & Support Access Scopes
+  if (action === 'content.publish') {
+    if (actor.platformGrants.includes('content_publisher')) {
+      return { allow: true, reason: 'Content publisher permitted to publish content' };
+    }
+    return { allow: false, reason: 'Requires content_publisher grant (portal admin cannot publish without content_publisher)' };
+  }
+
+  if (action === 'support.view') {
+    if (actor.platformGrants.includes('support_authorisation')) {
+      return { allow: true, reason: 'Support authorisation active for requested resource' };
+    }
+    return { allow: false, reason: 'Requires approved, active support authorisation scoped to this resource' };
   }
 
   // 11. Product Owner Improvement Loop

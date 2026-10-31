@@ -98,7 +98,15 @@ export type Action =
   | 'invite'
   | 'comment'
   | 'review'
-  | 'search';
+  | 'search'
+  | 'admin.org.suspend'
+  | 'admin.org.archive'
+  | 'admin.grant.assign'
+  | 'admin.audit.export'
+  | 'admin.user.anonymise'
+  | 'content.publish'
+  | 'notify.broadcast'
+  | 'support.view';
 
 export interface Decision {
   allow: boolean;
@@ -240,6 +248,16 @@ export interface Organisation {
   memberCount: number;
   synthetic: boolean;
   type?: 'platform' | 'client';
+  status?: 'draft' | 'active' | 'suspended' | 'archived';
+  suspendedAt?: string;
+  suspendedReason?: string;
+  archivedAt?: string;
+  policiesAccepted?: {
+    terms: boolean;
+    privacy: boolean;
+    version: string;
+    acceptedAt: string;
+  };
 }
 
 export interface UserRecord {
@@ -255,6 +273,9 @@ export interface UserRecord {
   isVerifiedEmployee: boolean;
   avatar?: string;
   createdAt: string;
+  status?: 'active' | 'suspended' | 'anonymised';
+  suspendedAt?: string;
+  anonymisedAt?: string;
 }
 
 export interface Offering {
@@ -293,6 +314,195 @@ export interface AuditEvent {
   resourceId: string;
   details: string;
   ip?: string;
+  prevHash?: string;
+  hash?: string;
+  outcome?: 'success' | 'denied';
+  requestId?: string;
+}
+
+// ── Admin Portal Types ──
+
+export type PlatformGrant = 'learning_moderator' | 'content_publisher' | 'product_owner' | 'portal_admin';
+
+export interface GrantRecord {
+  id: string;
+  userId: string;
+  userEmail: string;
+  grant: PlatformGrant;
+  grantedBy: string;
+  grantedByName: string;
+  grantedAt: string;
+  expiresAt?: string;
+  reason: string;
+  status: 'active' | 'revoked' | 'expired';
+}
+
+export type ApprovalActionType =
+  | 'grant_portal_admin'
+  | 'self_grant'
+  | 'support_access'
+  | 'broadcast_all_clients'
+  | 'archive_organisation'
+  | 'anonymise_user'
+  | 'publish_content'
+  | 'seed_reset';
+
+export interface ApprovalRequest {
+  id: string;
+  actionType: ApprovalActionType;
+  title: string;
+  description: string;
+  requestedBy: string;
+  requestedByName: string;
+  requestedAt: string;
+  expiresAt: string; // 72h window
+  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  approvedBy?: string;
+  approvedByName?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  payload: Record<string, any>;
+  diffSummary?: { field: string; before: string; after: string }[];
+}
+
+export interface StepupVerification {
+  id: string;
+  userId: string;
+  codeHash: string;
+  verifiedAt?: string;
+  expiresAt: string; // 10 minute validity
+  purpose: string;
+}
+
+export interface SupportAuthorisation {
+  id: string;
+  orgId: string;
+  orgName: string;
+  resourceKind: 'contribution' | 'demo_run';
+  resourceId: string;
+  reason: string;
+  durationHours: number;
+  requestedBy: string;
+  requestedByName: string;
+  requestedAt: string;
+  approvedBy: string;
+  approvedByName: string;
+  approvedAt: string;
+  expiresAt: string;
+  revokedAt?: string;
+  status: 'active' | 'expired' | 'revoked';
+}
+
+export type ContentType = 'blog' | 'case_study' | 'testimonial' | 'banner' | 'faq';
+export type ContentStatus = 'draft' | 'in_review' | 'approved' | 'published' | 'unpublished' | 'archived';
+export type ContentAudience = 'public' | 'employee' | 'client';
+
+export interface ContentConsentEvidence {
+  id: string;
+  sourceType: 'written_approval' | 'email' | 'signed_form' | 'recorded_call';
+  evidenceRef: string;
+  consentDate: string;
+  approvedByPerson: string;
+  verifiedGenuine: boolean;
+  expiryDate?: string;
+}
+
+export interface ContentItem {
+  id: string;
+  type: ContentType;
+  title: string;
+  slug: string;
+  status: ContentStatus;
+  audience: ContentAudience;
+  excerpt?: string;
+  body: string;
+  coverImageUrl?: string;
+  coverImageAlt?: string;
+  authorId: string;
+  authorName: string;
+  offeringIds: string[];
+  tags: string[];
+  category?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  ogImageUrl?: string;
+  scheduledPublishAt?: string;
+  scheduledUnpublishAt?: string;
+  publishedAt?: string;
+  updatedAt: string;
+  createdAt: string;
+  version: number;
+  testimonialDetails?: {
+    quote: string;
+    speakerName: string;
+    speakerTitle: string;
+    organisationName: string;
+    displayMode: 'named' | 'name_and_org' | 'anonymised';
+    rating?: number;
+    consent: ContentConsentEvidence;
+    isSyntheticSample?: boolean;
+  };
+  bannerDetails?: {
+    message: string;
+    linkUrl?: string;
+    style: 'info' | 'success' | 'warning';
+    placement: 'home_top_bar' | 'offerings_page' | 'portal_header';
+    dismissible: boolean;
+    priority: number;
+  };
+  faqDetails?: {
+    order: number;
+    category: string;
+  };
+}
+
+export interface MediaItem {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  altText: string;
+  audience: 'public' | 'private';
+  url: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  usagesCount: number;
+}
+
+export interface NotificationBroadcast {
+  id: string;
+  title: string;
+  message: string;
+  type: 'announcement' | 'maintenance' | 'policy_update' | 'webinar_invite' | 'product_update';
+  severity: 'info' | 'warning' | 'critical';
+  targetAudience: {
+    scope: 'all_employees' | 'all_clients' | 'specific_orgs' | 'client_admins_only' | 'members_by_role' | 'specific_users';
+    orgIds?: string[];
+    roles?: string[];
+    userIds?: string[];
+  };
+  linkUrl?: string;
+  channels: ('in_app' | 'email')[];
+  scheduledAt?: string;
+  sentAt?: string;
+  senderId: string;
+  senderName: string;
+  idempotencyKey: string;
+  deliveryReport: {
+    targetCount: number;
+    storedCount: number;
+    readCount: number;
+    recalledCount: number;
+  };
+}
+
+export interface NotificationTemplate {
+  id: string;
+  title: string;
+  category: string;
+  subjectTemplate: string;
+  bodyTemplate: string;
+  variables: string[];
 }
 
 export interface DemoEnquiry {

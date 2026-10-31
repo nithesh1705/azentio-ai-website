@@ -6,6 +6,7 @@ import { Navbar } from './Navbar';
 import { PortalSidebar } from './PortalSidebar';
 import { EmployeeShell } from './EmployeeShell';
 import { ClientShell } from './ClientShell';
+import { AdminShell } from './AdminShell';
 import { AIRAWidget } from '@/components/aira/AIRAWidget';
 import { PeekingRobot } from '@/components/widgets/PeekingRobot';
 import Link from 'next/link';
@@ -23,6 +24,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // Dedicated Client Portal shell for all /client/** routes
   if (pathname.startsWith('/client')) {
     return <ClientShell>{children}</ClientShell>;
+  }
+
+  // Dedicated Admin Portal shell for all /admin/** routes
+  if (pathname.startsWith('/admin')) {
+    return <AdminShell>{children}</AdminShell>;
   }
 
   // Determine if on an internal portal workspace

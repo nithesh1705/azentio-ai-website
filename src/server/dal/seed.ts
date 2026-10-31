@@ -141,6 +141,20 @@ export const SEED_USERS: UserRecord[] = [
     createdAt: '2026-01-01T00:00:00Z',
   },
   {
+    id: 'usr-admin-fernando',
+    name: 'Fernando Alonso',
+    email: 'fernando_alonso@azentio.com',
+    // bcrypt hash of 'admin123' (rounds=12)
+    passwordHash: '$2b$12$zYeSW/YRqDbMhafRyioy..npvyhUOuRziIFZheT7WDh55B/Y6oay.',
+    orgId: 'org-azentio',
+    role: 'portal_admin',
+    platformGrants: ['portal_admin'],
+    memberships: [],
+    isVerifiedEmployee: true,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
+    createdAt: '2026-01-05T00:00:00Z',
+  },
+  {
     id: 'usr-client-virat',
     name: 'Virat Kohli',
     email: 'virat_kohli@abcd.in',
