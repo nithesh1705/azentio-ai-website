@@ -122,6 +122,141 @@ const initialContentItems: ContentItem[] = [
     createdAt: '2026-10-20T10:00:00Z',
     version: 1,
   },
+  {
+    id: 'content-test-01',
+    type: 'testimonial',
+    title: 'ABCD Technologies Credit Risk Testimonial',
+    slug: 'abcd-technologies-credit-risk-testimonial',
+    status: 'published',
+    audience: 'public',
+    body: 'Azentio Financial Analysis Intelligence transformed our SME credit review turnaround from 4 days to 45 minutes with zero false-positives.',
+    authorId: 'usr-pub-nishanth',
+    authorName: 'Nishanth E',
+    offeringIds: ['offering-fai'],
+    tags: ['Customer Quote', 'Lending'],
+    testimonialDetails: {
+      quote: 'Azentio Financial Analysis Intelligence transformed our SME credit review turnaround from 4 days to 45 minutes with zero false-positives.',
+      speakerName: 'Virat Kohli',
+      speakerTitle: 'Head of Enterprise Credit Risk',
+      organisationName: 'ABCD Technologies',
+      displayMode: 'named',
+      rating: 5,
+      consent: {
+        id: 'con-t1',
+        sourceType: 'signed_form',
+        evidenceRef: 'legal-test-c2026-001',
+        consentDate: '2026-10-01',
+        approvedByPerson: 'Virat Kohli',
+        verifiedGenuine: true,
+      },
+    },
+    publishedAt: '2026-10-26T10:00:00Z',
+    updatedAt: '2026-10-26T10:00:00Z',
+    createdAt: '2026-10-26T10:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'content-test-02',
+    type: 'testimonial',
+    title: 'Sample / Synthetic Testimonial (Demo)',
+    slug: 'synthetic-demo-testimonial',
+    status: 'draft',
+    audience: 'public',
+    body: 'Sample test review for demonstration and layout testing purposes only.',
+    authorId: 'usr-pub-nishanth',
+    authorName: 'Nishanth E',
+    offeringIds: ['offering-fai'],
+    tags: ['Synthetic', 'Sample'],
+    testimonialDetails: {
+      quote: 'Sample test review for demonstration and layout testing purposes only.',
+      speakerName: 'Synthetic Reviewer',
+      speakerTitle: 'QA Lead',
+      organisationName: 'Cedar Capital',
+      displayMode: 'named',
+      rating: 4,
+      isSyntheticSample: true,
+      consent: {
+        id: 'con-t2',
+        sourceType: 'signed_form',
+        evidenceRef: 'sample-doc-synthetic',
+        consentDate: '2026-10-20',
+        approvedByPerson: 'QA Lead',
+        verifiedGenuine: false,
+      },
+    },
+    updatedAt: '2026-10-20T10:00:00Z',
+    createdAt: '2026-10-20T10:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'content-banner-01',
+    type: 'banner',
+    title: 'Scheduled Platform Maintenance Notice',
+    slug: 'scheduled-platform-maintenance-notice',
+    status: 'published',
+    audience: 'public',
+    body: 'Scheduled quarterly maintenance window: Nov 2, 2026, 02:00-02:15 UTC.',
+    authorId: 'usr-pub-nishanth',
+    authorName: 'Nishanth E',
+    offeringIds: [],
+    tags: ['Maintenance', 'Advisory'],
+    bannerDetails: {
+      message: 'Scheduled quarterly maintenance window: Nov 2, 2026, 02:00-02:15 UTC. Zero disruption to client sandboxes expected.',
+      linkUrl: '/about',
+      style: 'info',
+      placement: 'home_top_bar',
+      dismissible: true,
+      priority: 1,
+    },
+    publishedAt: '2026-10-28T08:00:00Z',
+    updatedAt: '2026-10-28T08:00:00Z',
+    createdAt: '2026-10-28T08:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'content-faq-01',
+    type: 'faq',
+    title: 'How does Azentio enforce tenant data isolation across client workspaces?',
+    slug: 'how-azentio-enforces-tenant-data-isolation',
+    status: 'published',
+    audience: 'public',
+    body: 'All tenant queries are bounded by cryptographically verified server-side session contexts. Cross-tenant identifiers fail by default, and shared market benchmarks require de-identified aggregation.',
+    authorId: 'usr-pub-nishanth',
+    authorName: 'Nishanth E',
+    offeringIds: [],
+    tags: ['Security', 'Isolation'],
+    category: 'Security & Privacy',
+    faqDetails: {
+      order: 1,
+      category: 'Security & Privacy',
+    },
+    publishedAt: '2026-10-15T09:00:00Z',
+    updatedAt: '2026-10-15T09:00:00Z',
+    createdAt: '2026-10-15T09:00:00Z',
+    version: 1,
+  },
+  {
+    id: 'content-faq-02',
+    type: 'faq',
+    title: 'What is the MIN_DISTINCT_ORGS threshold and why is it enforced?',
+    slug: 'what-is-min-distinct-orgs-threshold',
+    status: 'published',
+    audience: 'public',
+    body: 'Under Section 9 of the system specification, market intelligence statistics and covariance signals are displayed only when at least 3 distinct client organisations have contributed validated observations. This prevents reverse-engineering of single-organisation trading or lending positions.',
+    authorId: 'usr-pub-nishanth',
+    authorName: 'Nishanth E',
+    offeringIds: ['offering-fai'],
+    tags: ['Compliance', 'Federation'],
+    category: 'Collective Learning',
+    faqDetails: {
+      order: 2,
+      category: 'Collective Learning',
+    },
+    publishedAt: '2026-10-16T10:00:00Z',
+    updatedAt: '2026-10-16T10:00:00Z',
+    createdAt: '2026-10-16T10:00:00Z',
+    version: 1,
+  },
 ];
 
 class ContentStore {
@@ -397,4 +532,169 @@ export function archiveContentItem(
   );
 
   return item;
+}
+
+// ── Media Library Management ──
+
+import { MediaItem } from '@/types';
+
+const initialMedia: MediaItem[] = [
+  {
+    id: 'media-01',
+    filename: 'azentio-architecture-diagram.png',
+    mimeType: 'image/png',
+    sizeBytes: 245760,
+    altText: 'Enterprise Architecture & Federated Learning Diagram',
+    audience: 'public',
+    url: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=80',
+    uploadedBy: 'usr-pub-nishanth',
+    uploadedAt: '2026-10-10T12:00:00Z',
+    usagesCount: 3,
+  },
+  {
+    id: 'media-02',
+    filename: 'confidential-audit-whitepaper-sample.pdf',
+    mimeType: 'application/pdf',
+    sizeBytes: 1572864,
+    altText: 'Confidential Islamic Banking Covenant Whitepaper',
+    audience: 'private',
+    url: '/api/media/confidential-audit-whitepaper-sample.pdf',
+    uploadedBy: 'usr-admin-max',
+    uploadedAt: '2026-10-18T15:30:00Z',
+    usagesCount: 1,
+  },
+];
+
+class MediaStore {
+  items: MediaItem[] = JSON.parse(JSON.stringify(initialMedia));
+  reset() {
+    this.items = JSON.parse(JSON.stringify(initialMedia));
+  }
+}
+
+export const mediaStore = new MediaStore();
+
+export function getMediaItems(
+  actor: Actor,
+  filter?: { audience?: 'public' | 'private'; search?: string }
+): MediaItem[] {
+  const hasGrant =
+    actor.platformGrants.includes('content_publisher') ||
+    actor.platformGrants.includes('portal_admin');
+
+  if (!hasGrant) {
+    throw new Error('Access denied: Media management requires content_publisher or portal_admin platform grant.');
+  }
+
+  let list = mediaStore.items;
+  if (filter?.audience && filter.audience !== ('all' as any)) {
+    list = list.filter((m) => m.audience === filter.audience);
+  }
+  if (filter?.search) {
+    const s = filter.search.toLowerCase();
+    list = list.filter((m) => m.filename.toLowerCase().includes(s) || m.altText.toLowerCase().includes(s));
+  }
+  return list;
+}
+
+export function uploadMediaItem(
+  actor: Actor,
+  data: {
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    altText: string;
+    audience: 'public' | 'private';
+    url?: string;
+  }
+): MediaItem {
+  const hasGrant =
+    actor.platformGrants.includes('content_publisher') ||
+    actor.platformGrants.includes('portal_admin');
+
+  if (!hasGrant) {
+    throw new Error('Requires content_publisher or portal_admin platform grant to upload media.');
+  }
+
+  // Max size: 25MB
+  if (data.sizeBytes > 25 * 1024 * 1024) {
+    throw new Error('Media upload exceeds maximum limit of 25MB.');
+  }
+
+  const item: MediaItem = {
+    id: `media-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    filename: data.filename,
+    mimeType: data.mimeType,
+    sizeBytes: data.sizeBytes,
+    altText: data.altText,
+    audience: data.audience,
+    url: data.url || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800',
+    uploadedBy: actor.userId,
+    uploadedAt: new Date().toISOString(),
+    usagesCount: 0,
+  };
+
+  mediaStore.items.unshift(item);
+
+  appendAuditEvent(
+    actor,
+    'admin.media.upload',
+    'media_item',
+    item.id,
+    `Uploaded ${item.audience} media item: ${item.filename} (${(item.sizeBytes / 1024).toFixed(1)} KB)`
+  );
+
+  return item;
+}
+
+export function deleteMediaItem(actor: Actor, id: string): { success: boolean } {
+  const hasGrant =
+    actor.platformGrants.includes('content_publisher') ||
+    actor.platformGrants.includes('portal_admin');
+
+  if (!hasGrant) {
+    throw new Error('Requires content_publisher or portal_admin platform grant to delete media.');
+  }
+
+  const item = mediaStore.items.find((m) => m.id === id);
+  if (!item) throw new Error(`Media item not found: ${id}`);
+
+  mediaStore.items = mediaStore.items.filter((m) => m.id !== id);
+
+  appendAuditEvent(
+    actor,
+    'admin.media.delete',
+    'media_item',
+    id,
+    `Deleted media item: ${item.filename}`
+  );
+
+  return { success: true };
+}
+
+export function reorderFaqs(actor: Actor, orderedIds: string[]): { success: boolean } {
+  const hasGrant =
+    actor.platformGrants.includes('content_publisher') ||
+    actor.platformGrants.includes('portal_admin');
+
+  if (!hasGrant) {
+    throw new Error('Requires content_publisher or portal_admin platform grant to reorder FAQs.');
+  }
+
+  orderedIds.forEach((id, index) => {
+    const item = contentStore.items.find((i) => i.id === id);
+    if (item && item.faqDetails) {
+      item.faqDetails.order = index + 1;
+    }
+  });
+
+  appendAuditEvent(
+    actor,
+    'admin.content.reorder_faqs',
+    'faq_list',
+    'all',
+    'Reordered FAQs for public layout.'
+  );
+
+  return { success: true };
 }
