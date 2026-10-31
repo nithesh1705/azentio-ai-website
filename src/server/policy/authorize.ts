@@ -212,6 +212,8 @@ export function authorize(
   // 10. Platform Administration
   if (
     action === 'manage_org' ||
+    action === 'manage_roles' ||
+    action === 'invite_member' ||
     action === 'admin.org.suspend' ||
     action === 'admin.org.archive' ||
     action === 'grant_platform_role' ||
