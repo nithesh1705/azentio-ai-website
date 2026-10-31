@@ -154,3 +154,4 @@ export function verifyAuditChain(
     message: `Cryptographic audit chain intact: All ${chronological.length} entries verified against SHA-256 ledger.`,
   };
 }
+

@@ -469,3 +469,4 @@ export function revokePlatformGrant(
 
   return { success: true };
 }
+

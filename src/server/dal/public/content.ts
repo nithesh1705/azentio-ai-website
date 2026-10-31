@@ -78,3 +78,4 @@ export function getPublicFAQs(category?: string): ContentItem[] {
     })
     .sort((a, b) => (a.faqDetails?.order || 99) - (b.faqDetails?.order || 99));
 }
+
