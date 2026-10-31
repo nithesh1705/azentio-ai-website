@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -20,7 +20,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-export default function ClientSearchPage() {
+function ClientSearchInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams?.get('q') || '';
@@ -214,3 +214,10 @@ export default function ClientSearchPage() {
   );
 }
 
+export default function ClientSearchPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><span className="text-xs text-muted-foreground animate-pulse">Loading search…</span></div>}>
+      <ClientSearchInner />
+    </Suspense>
+  );
+}
